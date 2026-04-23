@@ -129,3 +129,17 @@ Expected:
 Mini2 node server placeholder
 Mini2 client placeholder
 ```
+
+## One-Command Foundation Demo
+
+```bash
+bash scripts/run_foundation_demo.sh
+```
+
+This runs data splitting, C++ configure/build, and placeholder binaries in sequence.
+
+## Handoff Document
+
+For Seth's Part 2 starting point and ownership details, see:
+
+- `docs/HANDOFF_SETH.md`
