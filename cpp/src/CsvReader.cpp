@@ -113,6 +113,32 @@ bool CsvReader::parse_line(const std::string& line, TripRecord& record) {
             }
         };
 
+        auto parse_float = [&parse_double](const std::string& str, float default_val = 0.0f) -> float {
+            return static_cast<float>(parse_double(str, static_cast<double>(default_val)));
+        };
+
+        auto parse_uint8 = [&parse_int](const std::string& str, std::uint8_t default_val = 0) -> std::uint8_t {
+            int value = parse_int(str, static_cast<int>(default_val));
+            if (value < 0) {
+                return default_val;
+            }
+            if (value > 255) {
+                return 255;
+            }
+            return static_cast<std::uint8_t>(value);
+        };
+
+        auto parse_int16 = [&parse_int](const std::string& str, std::int16_t default_val = 0) -> std::int16_t {
+            int value = parse_int(str, static_cast<int>(default_val));
+            if (value < -32768) {
+                return -32768;
+            }
+            if (value > 32767) {
+                return 32767;
+            }
+            return static_cast<std::int16_t>(value);
+        };
+
         // Parse critical fields - if these fail, discard the row
         std::int64_t pickup_ts = parse_timestamp(tokens[1]);
         std::int64_t dropoff_ts = parse_timestamp(tokens[2]);
@@ -122,29 +148,31 @@ bool CsvReader::parse_line(const std::string& line, TripRecord& record) {
         }
 
         // Parse all fields
-        record.vendor_id = parse_int(tokens[0], 0);
+        record.vendor_id = parse_uint8(tokens[0], 0);
         record.pickup_timestamp = pickup_ts;
         record.dropoff_timestamp = dropoff_ts;
-        record.passenger_count = parse_int(tokens[3], 0);
+        record.passenger_count = parse_uint8(tokens[3], 0);
         record.trip_distance = parse_double(tokens[4], 0.0);
-        record.rate_code_id = parse_int(tokens[5], 0);
+        record.rate_code_id = parse_uint8(tokens[5], 0);
         
         // Parse store_and_fwd_flag (Y/N -> true/false)
         std::string flag = tokens[6];
         std::transform(flag.begin(), flag.end(), flag.begin(), ::toupper);
-        record.store_and_fwd_flag = (flag == "Y" || flag == "YES" || flag == "TRUE" || flag == "1");
+        record.store_and_fwd_flag = static_cast<std::uint8_t>(
+            flag == "Y" || flag == "YES" || flag == "TRUE" || flag == "1"
+        );
         
-        record.pu_location_id = parse_int(tokens[7], 0);
-        record.do_location_id = parse_int(tokens[8], 0);
-        record.payment_type = parse_int(tokens[9], 0);
+        record.pu_location_id = parse_int16(tokens[7], 0);
+        record.do_location_id = parse_int16(tokens[8], 0);
+        record.payment_type = parse_uint8(tokens[9], 0);
         
         // Parse monetary fields (normalize empty/missing to 0.0)
         record.fare_amount = parse_double(tokens[10], 0.0);
-        record.extra = parse_double(tokens[11], 0.0);
-        record.mta_tax = parse_double(tokens[12], 0.0);
+        record.extra = parse_float(tokens[11], 0.0f);
+        record.mta_tax = parse_float(tokens[12], 0.0f);
         record.tip_amount = parse_double(tokens[13], 0.0);
         record.tolls_amount = parse_double(tokens[14], 0.0);
-        record.improvement_surcharge = parse_double(tokens[15], 0.0);
+        record.improvement_surcharge = parse_float(tokens[15], 0.0f);
         record.total_amount = parse_double(tokens[16], 0.0);
 
         // Validate record meets minimum requirements
@@ -174,7 +202,9 @@ std::vector<std::string> CsvReader::split_csv_line(const std::string& line) {
      * Results: ["field1", "field,with,commas", "field\"with\"quotes", "field4"]
      */
     std::vector<std::string> tokens;
+    tokens.reserve(19);  // TLC variants have at most 19 columns.
     std::string current_token;
+    current_token.reserve(line.size());
     bool in_quotes = false;
     
     for (std::size_t i = 0; i < line.length(); ++i) {

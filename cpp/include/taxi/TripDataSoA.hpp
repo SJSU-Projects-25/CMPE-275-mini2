@@ -25,22 +25,22 @@ namespace taxi {
  */
 struct TripDataSoA {
     // ---- parallel arrays — index i corresponds to the i-th trip ----
-    std::vector<int>          vendor_id;
+    std::vector<std::uint8_t> vendor_id;
     std::vector<std::int64_t> pickup_timestamp;
     std::vector<std::int64_t> dropoff_timestamp;
-    std::vector<int>          passenger_count;
+    std::vector<std::uint8_t> passenger_count;
     std::vector<double>       trip_distance;
-    std::vector<int>          rate_code_id;
+    std::vector<std::uint8_t> rate_code_id;
     std::vector<std::uint8_t> store_and_fwd_flag;  // uint8_t avoids std::vector<bool> bit-packing, enabling SIMD
-    std::vector<int>          pu_location_id;
-    std::vector<int>          do_location_id;
-    std::vector<int>          payment_type;
+    std::vector<std::int16_t> pu_location_id;
+    std::vector<std::int16_t> do_location_id;
+    std::vector<std::uint8_t> payment_type;
     std::vector<double>       fare_amount;
-    std::vector<double>       extra;
-    std::vector<double>       mta_tax;
+    std::vector<float>        extra;
+    std::vector<float>        mta_tax;
     std::vector<double>       tip_amount;
     std::vector<double>       tolls_amount;
-    std::vector<double>       improvement_surcharge;
+    std::vector<float>        improvement_surcharge;
     std::vector<double>       total_amount;
 
     std::size_t size() const { return pickup_timestamp.size(); }
