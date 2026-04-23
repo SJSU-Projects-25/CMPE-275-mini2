@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package mini2;
+
+message TimeRangeQuery {
+  int64 start_time = 1;
+  int64 end_time = 2;
+}
+
+message NumericRangeQuery {
+  double min_val = 1;
+  double max_val = 2;
+}
+
+message IntRangeQuery {
+  int32 min_val = 1;
+  int32 max_val = 2;
+}
+
+message CombinedQuery {
+  TimeRangeQuery time_range = 1;
+  NumericRangeQuery distance_range = 2;
+  IntRangeQuery passenger_range = 3;
+}
+
+message QueryRequest {
+  string request_id = 1;
+  string query_type = 2;
+  TimeRangeQuery time_query = 3;
+  NumericRangeQuery numeric_query = 4;
+  IntRangeQuery int_query = 5;
+  CombinedQuery combined_query = 6;
+}
+
+message TripRecordMsg {
+  int32 vendor_id = 1;
+  int64 pickup_timestamp = 2;
+  int64 dropoff_timestamp = 3;
+  int32 passenger_count = 4;
+  double trip_distance = 5;
+  int32 rate_code_id = 6;
+  bool store_and_fwd_flag = 7;
+  int32 pu_location_id = 8;
+  int32 do_location_id = 9;
+  int32 payment_type = 10;
+  double fare_amount = 11;
+  double extra = 12;
+  double mta_tax = 13;
+  double tip_amount = 14;
+  double tolls_amount = 15;
+  double improvement_surcharge = 16;
+  double total_amount = 17;
+}
+
+message ChunkResponse {
+  string request_id = 1;
+  int32 chunk_index = 2;
+  int32 total_chunks = 3;
+  bool is_last = 4;
+  repeated TripRecordMsg records = 5;
+  double aggregation_sum = 6;
+  double aggregation_avg = 7;
+  int64 aggregation_count = 8;
+}
+
+message ChunkRequest {
+  string request_id = 1;
+  int32 chunk_index = 2;
+}
+
+message ForwardRequest {
+  string request_id = 1;
+  string origin_node = 2;
+  QueryRequest query = 3;
+}
+
+message ForwardResponse {
+  string request_id = 1;
+  string source_node = 2;
+  repeated TripRecordMsg records = 3;
+  double aggregation_sum = 4;
+  double aggregation_avg = 5;
+  int64 aggregation_count = 6;
+}
+
+message CancelRequest {
+  string request_id = 1;
+}
+
+message CancelResponse {
+  bool acknowledged = 1;
+}
+
+service NodeService {
+  rpc SubmitQuery(QueryRequest) returns (ChunkResponse);
+  rpc FetchChunk(ChunkRequest) returns (ChunkResponse);
+  rpc ForwardQuery(ForwardRequest) returns (ForwardResponse);
+  rpc CancelQuery(CancelRequest) returns (CancelResponse);
+}
