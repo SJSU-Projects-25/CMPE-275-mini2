@@ -5,6 +5,7 @@ import argparse
 import csv
 import json
 import sys
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
 from dataclasses import dataclass
@@ -30,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="config/topology.json",
         help="Path to topology configuration JSON",
     )
+    parser.add_argument(
+        "--submit-local-only",
+        action="store_true",
+        help="Handle SubmitQuery with local data only (no child forwarding).",
+    )
     return parser
 
 
@@ -43,6 +49,7 @@ class NodeContext:
     children: list[str]
     node_addresses: dict[str, str]
     records: list[TripRecord]
+    submit_local_only: bool
 
 
 def _resolve_path(raw_path: str, config_path: Path) -> Path:
@@ -170,7 +177,9 @@ def load_records(data_path: Path) -> list[TripRecord]:
     return records
 
 
-def load_node_context(node_id: str, config_path: Path) -> NodeContext:
+def load_node_context(
+    node_id: str, config_path: Path, submit_local_only: bool = False
+) -> NodeContext:
     with config_path.open("r", encoding="utf-8") as config_file:
         config: dict[str, Any] = json.load(config_file)
 
@@ -204,6 +213,7 @@ def load_node_context(node_id: str, config_path: Path) -> NodeContext:
         children=children,
         node_addresses=node_addresses,
         records=records,
+        submit_local_only=submit_local_only,
     )
 
 
@@ -247,28 +257,39 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             )
             return stub.ForwardQuery(child_request, timeout=10.0)
 
-    def ForwardQuery(
-        self, request: mini2_pb2.ForwardRequest, rpc_context: grpc.ServicerContext
+    def _run_query_and_maybe_forward(
+        self,
+        request_id: str,
+        query: mini2_pb2.QueryRequest,
+        origin_node: str,
+        allow_forwarding: bool,
     ) -> mini2_pb2.ForwardResponse:
-        local_result = self.engine.execute_request(request.query)
+        local_result = self.engine.execute_request(query)
         merged_records = [_trip_record_to_proto(record) for record in local_result.records]
         merged_sum = local_result.aggregation_sum
         merged_count = local_result.aggregation_count
 
         forward_targets = [
-            child
-            for child in self.context.children
-            if child != request.origin_node
-        ]
+            child for child in self.context.children if child != origin_node
+        ] if allow_forwarding else []
         if forward_targets:
             print(
-                f"[{self.context.node_id}] request={request.request_id} "
-                f"fan-out -> {', '.join(forward_targets)}"
-            , flush=True)
+                f"[{self.context.node_id}] request={request_id} "
+                f"fan-out -> {', '.join(forward_targets)}",
+                flush=True,
+            )
 
         with ThreadPoolExecutor(max_workers=max(1, len(forward_targets))) as pool:
             futures = {
-                pool.submit(self._forward_to_child, child_id, request): child_id
+                pool.submit(
+                    self._forward_to_child,
+                    child_id,
+                    mini2_pb2.ForwardRequest(
+                        request_id=request_id,
+                        origin_node=self.context.node_id,
+                        query=query,
+                    ),
+                ): child_id
                 for child_id in forward_targets
             }
             for future in as_completed(futures):
@@ -277,16 +298,18 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                     child_response = future.result()
                 except Exception as exc:  # pragma: no cover - runtime/network branch
                     print(
-                        f"[{self.context.node_id}] request={request.request_id} "
-                        f"child={child_id} forward failed: {exc}"
-                    , flush=True)
+                        f"[{self.context.node_id}] request={request_id} "
+                        f"child={child_id} forward failed: {exc}",
+                        flush=True,
+                    )
                     continue
-                if child_response.request_id != request.request_id:
+                if child_response.request_id != request_id:
                     print(
-                        f"[{self.context.node_id}] request={request.request_id} "
+                        f"[{self.context.node_id}] request={request_id} "
                         f"child={child_id} returned mismatched request_id="
-                        f"{child_response.request_id}"
-                    , flush=True)
+                        f"{child_response.request_id}",
+                        flush=True,
+                    )
                     continue
                 merged_records.extend(child_response.records)
                 merged_sum += child_response.aggregation_sum
@@ -294,11 +317,12 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
 
         merged_avg = merged_sum / merged_count if merged_count else 0.0
         print(
-            f"[{self.context.node_id}] request={request.request_id} merged_count="
-            f"{merged_count} (local={local_result.aggregation_count})"
-        , flush=True)
+            f"[{self.context.node_id}] request={request_id} merged_count="
+            f"{merged_count} (local={local_result.aggregation_count})",
+            flush=True,
+        )
         return mini2_pb2.ForwardResponse(
-            request_id=request.request_id,
+            request_id=request_id,
             source_node=self.context.node_id,
             records=merged_records,
             aggregation_sum=merged_sum,
@@ -306,12 +330,46 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             aggregation_count=merged_count,
         )
 
+    def ForwardQuery(
+        self, request: mini2_pb2.ForwardRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.ForwardResponse:
+        return self._run_query_and_maybe_forward(
+            request_id=request.request_id,
+            query=request.query,
+            origin_node=request.origin_node,
+            allow_forwarding=True,
+        )
+
     def SubmitQuery(
         self, request: mini2_pb2.QueryRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.ChunkResponse:
-        rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        rpc_context.set_details("SubmitQuery is implemented in Step 5.")
-        return mini2_pb2.ChunkResponse()
+        effective_request_id = request.request_id or f"py-{uuid.uuid4().hex}"
+        if request.request_id != effective_request_id:
+            request = mini2_pb2.QueryRequest(
+                request_id=effective_request_id,
+                query_type=request.query_type,
+                time_query=request.time_query,
+                numeric_query=request.numeric_query,
+                int_query=request.int_query,
+                combined_query=request.combined_query,
+            )
+
+        forward_result = self._run_query_and_maybe_forward(
+            request_id=effective_request_id,
+            query=request,
+            origin_node=self.context.node_id,
+            allow_forwarding=not self.context.submit_local_only,
+        )
+        return mini2_pb2.ChunkResponse(
+            request_id=effective_request_id,
+            chunk_index=0,
+            total_chunks=1,
+            is_last=True,
+            records=forward_result.records,
+            aggregation_sum=forward_result.aggregation_sum,
+            aggregation_avg=forward_result.aggregation_avg,
+            aggregation_count=forward_result.aggregation_count,
+        )
 
     def FetchChunk(
         self, request: mini2_pb2.ChunkRequest, rpc_context: grpc.ServicerContext
@@ -329,10 +387,15 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
 
 
 def serve(context: NodeContext) -> None:
-    server = grpc.server(ThreadPoolExecutor(max_workers=16))
+    server = grpc.server(
+        ThreadPoolExecutor(max_workers=16),
+        options=(("grpc.so_reuseport", 0),),
+    )
     mini2_pb2_grpc.add_NodeServiceServicer_to_server(NodeService(context), server)
     bind_target = f"{context.host}:{context.port}"
-    server.add_insecure_port(bind_target)
+    bound_port = server.add_insecure_port(bind_target)
+    if bound_port == 0:
+        raise RuntimeError(f"Failed to bind gRPC server to {bind_target}")
     server.start()
     print(f"Node {context.node_id} gRPC server listening on {bind_target}", flush=True)
     server.wait_for_termination()
@@ -346,7 +409,11 @@ def main() -> int:
         return 1
 
     try:
-        context = load_node_context(node_id=args.id, config_path=config_path)
+        context = load_node_context(
+            node_id=args.id,
+            config_path=config_path,
+            submit_local_only=args.submit_local_only,
+        )
     except Exception as exc:
         print(f"Node startup failed: {exc}", flush=True)
         return 1
@@ -356,6 +423,7 @@ def main() -> int:
     print(f"  host: {context.host}", flush=True)
     print(f"  port: {context.port}", flush=True)
     print(f"  children: {children_text}", flush=True)
+    print(f"  submit_local_only: {context.submit_local_only}", flush=True)
     print(f"  data_file: {context.data_path.as_posix()}", flush=True)
     print(f"  loaded_records: {len(context.records)}", flush=True)
     serve(context)
