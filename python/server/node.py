@@ -5,6 +5,7 @@ import argparse
 import csv
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,10 @@ PYTHON_DIR = Path(__file__).resolve().parents[1]
 if str(PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(PYTHON_DIR))
 
+import grpc
+import mini2_pb2
+import mini2_pb2_grpc
+from query_engine import QueryEngine
 from trip_record import TripRecord
 
 
@@ -34,7 +39,9 @@ class NodeContext:
     host: str
     port: int
     data_path: Path
+    neighbors: list[str]
     children: list[str]
+    node_addresses: dict[str, str]
     records: list[TripRecord]
 
 
@@ -79,11 +86,16 @@ def _derive_children(
 ) -> tuple[list[str], str | None]:
     graph = _build_graph(edges)
     parent_map = _build_parent_map(graph, root=root)
-    neighbors = set(graph.get(node_id, set()))
     parent = parent_map.get(node_id)
-    if parent is not None and parent in neighbors:
-        neighbors.remove(parent)
-    return sorted(neighbors), parent
+    children = sorted(
+        candidate for candidate, candidate_parent in parent_map.items() if candidate_parent == node_id
+    )
+    return children, parent
+
+
+def _derive_neighbors(node_id: str, edges: list[str]) -> list[str]:
+    graph = _build_graph(edges)
+    return sorted(graph.get(node_id, set()))
 
 
 def _to_int(raw_value: str) -> int:
@@ -176,39 +188,177 @@ def load_node_context(node_id: str, config_path: Path) -> NodeContext:
         raise FileNotFoundError(f"Data file not found for node {node_id}: {data_path}")
 
     edges = config.get("edges", [])
+    neighbors = _derive_neighbors(node_id=node_id, edges=edges)
     children, _ = _derive_children(node_id=node_id, edges=edges, root="A")
     records = load_records(data_path)
+    node_addresses: dict[str, str] = {}
+    for name, cfg in nodes.items():
+        node_addresses[name] = f"{cfg['host']}:{int(cfg['port'])}"
 
     return NodeContext(
         node_id=node_id,
         host=host,
         port=port,
         data_path=data_path,
+        neighbors=neighbors,
         children=children,
+        node_addresses=node_addresses,
         records=records,
     )
+
+
+def _trip_record_to_proto(record: TripRecord) -> mini2_pb2.TripRecordMsg:
+    return mini2_pb2.TripRecordMsg(
+        vendor_id=record.vendor_id,
+        pickup_timestamp=record.pickup_timestamp,
+        dropoff_timestamp=record.dropoff_timestamp,
+        passenger_count=record.passenger_count,
+        trip_distance=record.trip_distance,
+        rate_code_id=record.rate_code_id,
+        store_and_fwd_flag=record.store_and_fwd_flag,
+        pu_location_id=record.pu_location_id,
+        do_location_id=record.do_location_id,
+        payment_type=record.payment_type,
+        fare_amount=record.fare_amount,
+        extra=record.extra,
+        mta_tax=record.mta_tax,
+        tip_amount=record.tip_amount,
+        tolls_amount=record.tolls_amount,
+        improvement_surcharge=record.improvement_surcharge,
+        total_amount=record.total_amount,
+    )
+
+
+class NodeService(mini2_pb2_grpc.NodeServiceServicer):
+    def __init__(self, context: NodeContext) -> None:
+        self.context = context
+        self.engine = QueryEngine(context.records)
+
+    def _forward_to_child(
+        self, child_id: str, request: mini2_pb2.ForwardRequest
+    ) -> mini2_pb2.ForwardResponse:
+        target = self.context.node_addresses[child_id]
+        with grpc.insecure_channel(target) as channel:
+            stub = mini2_pb2_grpc.NodeServiceStub(channel)
+            child_request = mini2_pb2.ForwardRequest(
+                request_id=request.request_id,
+                origin_node=self.context.node_id,
+                query=request.query,
+            )
+            return stub.ForwardQuery(child_request, timeout=10.0)
+
+    def ForwardQuery(
+        self, request: mini2_pb2.ForwardRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.ForwardResponse:
+        local_result = self.engine.execute_request(request.query)
+        merged_records = [_trip_record_to_proto(record) for record in local_result.records]
+        merged_sum = local_result.aggregation_sum
+        merged_count = local_result.aggregation_count
+
+        forward_targets = [
+            child
+            for child in self.context.children
+            if child != request.origin_node
+        ]
+        if forward_targets:
+            print(
+                f"[{self.context.node_id}] request={request.request_id} "
+                f"fan-out -> {', '.join(forward_targets)}"
+            , flush=True)
+
+        with ThreadPoolExecutor(max_workers=max(1, len(forward_targets))) as pool:
+            futures = {
+                pool.submit(self._forward_to_child, child_id, request): child_id
+                for child_id in forward_targets
+            }
+            for future in as_completed(futures):
+                child_id = futures[future]
+                try:
+                    child_response = future.result()
+                except Exception as exc:  # pragma: no cover - runtime/network branch
+                    print(
+                        f"[{self.context.node_id}] request={request.request_id} "
+                        f"child={child_id} forward failed: {exc}"
+                    , flush=True)
+                    continue
+                if child_response.request_id != request.request_id:
+                    print(
+                        f"[{self.context.node_id}] request={request.request_id} "
+                        f"child={child_id} returned mismatched request_id="
+                        f"{child_response.request_id}"
+                    , flush=True)
+                    continue
+                merged_records.extend(child_response.records)
+                merged_sum += child_response.aggregation_sum
+                merged_count += child_response.aggregation_count
+
+        merged_avg = merged_sum / merged_count if merged_count else 0.0
+        print(
+            f"[{self.context.node_id}] request={request.request_id} merged_count="
+            f"{merged_count} (local={local_result.aggregation_count})"
+        , flush=True)
+        return mini2_pb2.ForwardResponse(
+            request_id=request.request_id,
+            source_node=self.context.node_id,
+            records=merged_records,
+            aggregation_sum=merged_sum,
+            aggregation_avg=merged_avg,
+            aggregation_count=merged_count,
+        )
+
+    def SubmitQuery(
+        self, request: mini2_pb2.QueryRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.ChunkResponse:
+        rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        rpc_context.set_details("SubmitQuery is implemented in Step 5.")
+        return mini2_pb2.ChunkResponse()
+
+    def FetchChunk(
+        self, request: mini2_pb2.ChunkRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.ChunkResponse:
+        rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        rpc_context.set_details("FetchChunk is implemented in later steps.")
+        return mini2_pb2.ChunkResponse()
+
+    def CancelQuery(
+        self, request: mini2_pb2.CancelRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.CancelResponse:
+        rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        rpc_context.set_details("CancelQuery is implemented in later steps.")
+        return mini2_pb2.CancelResponse(acknowledged=False)
+
+
+def serve(context: NodeContext) -> None:
+    server = grpc.server(ThreadPoolExecutor(max_workers=16))
+    mini2_pb2_grpc.add_NodeServiceServicer_to_server(NodeService(context), server)
+    bind_target = f"{context.host}:{context.port}"
+    server.add_insecure_port(bind_target)
+    server.start()
+    print(f"Node {context.node_id} gRPC server listening on {bind_target}", flush=True)
+    server.wait_for_termination()
 
 
 def main() -> int:
     args = build_parser().parse_args()
     config_path = Path(args.config).resolve()
     if not config_path.exists():
-        print("Config file not found. Verify --config path.")
+        print("Config file not found. Verify --config path.", flush=True)
         return 1
 
     try:
         context = load_node_context(node_id=args.id, config_path=config_path)
     except Exception as exc:
-        print(f"Node startup failed: {exc}")
+        print(f"Node startup failed: {exc}", flush=True)
         return 1
 
     children_text = ", ".join(context.children) if context.children else "(none)"
-    print(f"Node {context.node_id} startup complete")
-    print(f"  host: {context.host}")
-    print(f"  port: {context.port}")
-    print(f"  children: {children_text}")
-    print(f"  data_file: {context.data_path.as_posix()}")
-    print(f"  loaded_records: {len(context.records)}")
+    print(f"Node {context.node_id} startup complete", flush=True)
+    print(f"  host: {context.host}", flush=True)
+    print(f"  port: {context.port}", flush=True)
+    print(f"  children: {children_text}", flush=True)
+    print(f"  data_file: {context.data_path.as_posix()}", flush=True)
+    print(f"  loaded_records: {len(context.records)}", flush=True)
+    serve(context)
     return 0
 
 
