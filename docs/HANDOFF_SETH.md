@@ -107,7 +107,8 @@ Observed output:
 
 ```bash
 # protobuf regeneration (optional)
-./.venv/bin/python -m grpc_tools.protoc -I proto/ --python_out=python/ --grpc_python_out=python/ proto/mini2.proto
+. .venv/bin/activate
+python -m grpc_tools.protoc -I proto/ --python_out=python/ --grpc_python_out=python/ proto/mini2.proto
 protoc -I proto/ --cpp_out=cpp/ --grpc_out=cpp/ --plugin=protoc-gen-grpc=$(which grpc_cpp_plugin) proto/mini2.proto
 
 # build
