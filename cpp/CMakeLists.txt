@@ -21,11 +21,22 @@ target_link_libraries(mini2_proto PUBLIC
     gRPC::grpc++
 )
 
+add_library(taxi_core
+    src/TripRecord.cpp
+    src/CsvReader.cpp
+    src/QueryEngine.cpp
+    src/TimeIndex.cpp
+)
+target_include_directories(taxi_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_executable(node_server
     server/node_server.cpp
 )
 target_link_libraries(node_server PRIVATE
     mini2_proto
+    taxi_core
     nlohmann_json::nlohmann_json
 )
 
