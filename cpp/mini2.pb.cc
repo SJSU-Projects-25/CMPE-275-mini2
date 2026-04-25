@@ -233,6 +233,45 @@ struct CancelRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CancelRequestDefaultTypeInternal _CancelRequest_default_instance_;
 
+inline constexpr BftMetadata::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        node_id_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        payload_hash_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        auth_tag_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        algorithm_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        nonce_{::uint64_t{0u}},
+        timestamp_ms_{::int64_t{0}} {}
+
+template <typename>
+constexpr BftMetadata::BftMetadata(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(BftMetadata_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(internal_visibility(), ::_pbi::ConstantInitialized()) {
+}
+struct BftMetadataDefaultTypeInternal {
+  constexpr BftMetadataDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~BftMetadataDefaultTypeInternal() {}
+  union {
+    BftMetadata _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BftMetadataDefaultTypeInternal _BftMetadata_default_instance_;
+
 inline constexpr ForwardResponse::Impl_::Impl_(
     [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
     ::_pbi::ConstantInitialized) noexcept
@@ -252,6 +291,7 @@ inline constexpr ForwardResponse::Impl_::Impl_(
         source_node_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        bft_meta_{nullptr},
         aggregation_sum_{0},
         aggregation_avg_{0},
         aggregation_count_{::int64_t{0}} {}
@@ -320,6 +360,7 @@ inline constexpr ChunkResponse::Impl_::Impl_(
         request_id_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        bft_meta_{nullptr},
         chunk_index_{0},
         total_chunks_{0},
         aggregation_sum_{0},
@@ -361,7 +402,8 @@ inline constexpr QueryRequest::Impl_::Impl_(
         time_query_{nullptr},
         numeric_query_{nullptr},
         int_query_{nullptr},
-        combined_query_{nullptr} {}
+        combined_query_{nullptr},
+        bft_meta_{nullptr} {}
 
 template <typename>
 constexpr QueryRequest::QueryRequest(::_pbi::ConstantInitialized)
@@ -393,7 +435,8 @@ inline constexpr ForwardRequest::Impl_::Impl_(
         origin_node_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
-        query_{nullptr} {}
+        query_{nullptr},
+        bft_meta_{nullptr} {}
 
 template <typename>
 constexpr ForwardRequest::ForwardRequest(::_pbi::ConstantInitialized)
@@ -454,19 +497,21 @@ const ::uint32_t
         2,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_._has_bits_),
-        9, // hasbit index offset
+        10, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.request_id_),
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.query_type_),
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.time_query_),
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.numeric_query_),
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.int_query_),
         PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.combined_query_),
+        PROTOBUF_FIELD_OFFSET(::mini2::QueryRequest, _impl_.bft_meta_),
         0,
         1,
         2,
         3,
         4,
         5,
+        6,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::TripRecordMsg, _impl_._has_bits_),
         20, // hasbit index offset
@@ -506,7 +551,7 @@ const ::uint32_t
         15,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_._has_bits_),
-        12, // hasbit index offset
+        13, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.request_id_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.chunk_index_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.total_chunks_),
@@ -516,15 +561,17 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.aggregation_avg_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.aggregation_count_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.effective_chunk_size_),
+        PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.bft_meta_),
         1,
-        2,
         3,
-        5,
-        0,
         4,
-        7,
-        8,
         6,
+        0,
+        5,
+        8,
+        9,
+        7,
+        2,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkRequest, _impl_._has_bits_),
         5, // hasbit index offset
@@ -534,28 +581,47 @@ const ::uint32_t
         1,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardRequest, _impl_._has_bits_),
-        6, // hasbit index offset
+        7, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardRequest, _impl_.request_id_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardRequest, _impl_.origin_node_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardRequest, _impl_.query_),
+        PROTOBUF_FIELD_OFFSET(::mini2::ForwardRequest, _impl_.bft_meta_),
         0,
         1,
         2,
+        3,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_._has_bits_),
-        9, // hasbit index offset
+        10, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.request_id_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.source_node_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.records_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.aggregation_sum_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.aggregation_avg_),
         PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.aggregation_count_),
+        PROTOBUF_FIELD_OFFSET(::mini2::ForwardResponse, _impl_.bft_meta_),
         1,
         2,
         0,
-        3,
         4,
         5,
+        6,
+        3,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_._has_bits_),
+        9, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.node_id_),
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.payload_hash_),
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.auth_tag_),
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.nonce_),
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.timestamp_ms_),
+        PROTOBUF_FIELD_OFFSET(::mini2::BftMetadata, _impl_.algorithm_),
+        0,
+        1,
+        2,
+        4,
+        5,
+        3,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::CancelRequest, _impl_._has_bits_),
         4, // hasbit index offset
@@ -575,13 +641,14 @@ static const ::_pbi::MigrationSchema
         {14, sizeof(::mini2::IntRangeQuery)},
         {21, sizeof(::mini2::CombinedQuery)},
         {30, sizeof(::mini2::QueryRequest)},
-        {45, sizeof(::mini2::TripRecordMsg)},
-        {82, sizeof(::mini2::ChunkResponse)},
-        {103, sizeof(::mini2::ChunkRequest)},
-        {110, sizeof(::mini2::ForwardRequest)},
-        {119, sizeof(::mini2::ForwardResponse)},
-        {134, sizeof(::mini2::CancelRequest)},
-        {139, sizeof(::mini2::CancelResponse)},
+        {47, sizeof(::mini2::TripRecordMsg)},
+        {84, sizeof(::mini2::ChunkResponse)},
+        {107, sizeof(::mini2::ChunkRequest)},
+        {114, sizeof(::mini2::ForwardRequest)},
+        {125, sizeof(::mini2::ForwardResponse)},
+        {142, sizeof(::mini2::BftMetadata)},
+        {157, sizeof(::mini2::CancelRequest)},
+        {162, sizeof(::mini2::CancelResponse)},
 };
 static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::mini2::_TimeRangeQuery_default_instance_._instance,
@@ -594,6 +661,7 @@ static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::mini2::_ChunkRequest_default_instance_._instance,
     &::mini2::_ForwardRequest_default_instance_._instance,
     &::mini2::_ForwardResponse_default_instance_._instance,
+    &::mini2::_BftMetadata_default_instance_._instance,
     &::mini2::_CancelRequest_default_instance_._instance,
     &::mini2::_CancelResponse_default_instance_._instance,
 };
@@ -607,58 +675,65 @@ const char descriptor_table_protodef_mini2_2eproto[] ABSL_ATTRIBUTE_SECTION_VARI
     "\022)\n\ntime_range\030\001 \001(\0132\025.mini2.TimeRangeQu"
     "ery\0220\n\016distance_range\030\002 \001(\0132\030.mini2.Nume"
     "ricRangeQuery\022-\n\017passenger_range\030\003 \001(\0132\024"
-    ".mini2.IntRangeQuery\"\351\001\n\014QueryRequest\022\022\n"
+    ".mini2.IntRangeQuery\"\217\002\n\014QueryRequest\022\022\n"
     "\nrequest_id\030\001 \001(\t\022\022\n\nquery_type\030\002 \001(\t\022)\n"
     "\ntime_query\030\003 \001(\0132\025.mini2.TimeRangeQuery"
     "\022/\n\rnumeric_query\030\004 \001(\0132\030.mini2.NumericR"
     "angeQuery\022\'\n\tint_query\030\005 \001(\0132\024.mini2.Int"
     "RangeQuery\022,\n\016combined_query\030\006 \001(\0132\024.min"
-    "i2.CombinedQuery\"\223\003\n\rTripRecordMsg\022\021\n\tve"
-    "ndor_id\030\001 \001(\005\022\030\n\020pickup_timestamp\030\002 \001(\003\022"
-    "\031\n\021dropoff_timestamp\030\003 \001(\003\022\027\n\017passenger_"
-    "count\030\004 \001(\005\022\025\n\rtrip_distance\030\005 \001(\001\022\024\n\014ra"
-    "te_code_id\030\006 \001(\005\022\032\n\022store_and_fwd_flag\030\007"
-    " \001(\010\022\026\n\016pu_location_id\030\010 \001(\005\022\026\n\016do_locat"
-    "ion_id\030\t \001(\005\022\024\n\014payment_type\030\n \001(\005\022\023\n\013fa"
-    "re_amount\030\013 \001(\001\022\r\n\005extra\030\014 \001(\001\022\017\n\007mta_ta"
-    "x\030\r \001(\001\022\022\n\ntip_amount\030\016 \001(\001\022\024\n\014tolls_amo"
-    "unt\030\017 \001(\001\022\035\n\025improvement_surcharge\030\020 \001(\001"
-    "\022\024\n\014total_amount\030\021 \001(\001\"\361\001\n\rChunkResponse"
-    "\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 \001("
-    "\005\022\024\n\014total_chunks\030\003 \001(\005\022\017\n\007is_last\030\004 \001(\010"
-    "\022%\n\007records\030\005 \003(\0132\024.mini2.TripRecordMsg\022"
-    "\027\n\017aggregation_sum\030\006 \001(\001\022\027\n\017aggregation_"
-    "avg\030\007 \001(\001\022\031\n\021aggregation_count\030\010 \001(\003\022\034\n\024"
-    "effective_chunk_size\030\t \001(\005\"7\n\014ChunkReque"
-    "st\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 "
-    "\001(\005\"]\n\016ForwardRequest\022\022\n\nrequest_id\030\001 \001("
-    "\t\022\023\n\013origin_node\030\002 \001(\t\022\"\n\005query\030\003 \001(\0132\023."
-    "mini2.QueryRequest\"\256\001\n\017ForwardResponse\022\022"
-    "\n\nrequest_id\030\001 \001(\t\022\023\n\013source_node\030\002 \001(\t\022"
-    "%\n\007records\030\003 \003(\0132\024.mini2.TripRecordMsg\022\027"
-    "\n\017aggregation_sum\030\004 \001(\001\022\027\n\017aggregation_a"
-    "vg\030\005 \001(\001\022\031\n\021aggregation_count\030\006 \001(\003\"#\n\rC"
-    "ancelRequest\022\022\n\nrequest_id\030\001 \001(\t\"&\n\016Canc"
-    "elResponse\022\024\n\014acknowledged\030\001 \001(\0102\373\001\n\013Nod"
-    "eService\0228\n\013SubmitQuery\022\023.mini2.QueryReq"
-    "uest\032\024.mini2.ChunkResponse\0227\n\nFetchChunk"
-    "\022\023.mini2.ChunkRequest\032\024.mini2.ChunkRespo"
-    "nse\022=\n\014ForwardQuery\022\025.mini2.ForwardReque"
-    "st\032\026.mini2.ForwardResponse\022:\n\013CancelQuer"
-    "y\022\024.mini2.CancelRequest\032\025.mini2.CancelRe"
-    "sponseb\006proto3"
+    "i2.CombinedQuery\022$\n\010bft_meta\030\007 \001(\0132\022.min"
+    "i2.BftMetadata\"\223\003\n\rTripRecordMsg\022\021\n\tvend"
+    "or_id\030\001 \001(\005\022\030\n\020pickup_timestamp\030\002 \001(\003\022\031\n"
+    "\021dropoff_timestamp\030\003 \001(\003\022\027\n\017passenger_co"
+    "unt\030\004 \001(\005\022\025\n\rtrip_distance\030\005 \001(\001\022\024\n\014rate"
+    "_code_id\030\006 \001(\005\022\032\n\022store_and_fwd_flag\030\007 \001"
+    "(\010\022\026\n\016pu_location_id\030\010 \001(\005\022\026\n\016do_locatio"
+    "n_id\030\t \001(\005\022\024\n\014payment_type\030\n \001(\005\022\023\n\013fare"
+    "_amount\030\013 \001(\001\022\r\n\005extra\030\014 \001(\001\022\017\n\007mta_tax\030"
+    "\r \001(\001\022\022\n\ntip_amount\030\016 \001(\001\022\024\n\014tolls_amoun"
+    "t\030\017 \001(\001\022\035\n\025improvement_surcharge\030\020 \001(\001\022\024"
+    "\n\014total_amount\030\021 \001(\001\"\227\002\n\rChunkResponse\022\022"
+    "\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 \001(\005\022"
+    "\024\n\014total_chunks\030\003 \001(\005\022\017\n\007is_last\030\004 \001(\010\022%"
+    "\n\007records\030\005 \003(\0132\024.mini2.TripRecordMsg\022\027\n"
+    "\017aggregation_sum\030\006 \001(\001\022\027\n\017aggregation_av"
+    "g\030\007 \001(\001\022\031\n\021aggregation_count\030\010 \001(\003\022\034\n\024ef"
+    "fective_chunk_size\030\t \001(\005\022$\n\010bft_meta\030\n \001"
+    "(\0132\022.mini2.BftMetadata\"7\n\014ChunkRequest\022\022"
+    "\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 \001(\005\""
+    "\203\001\n\016ForwardRequest\022\022\n\nrequest_id\030\001 \001(\t\022\023"
+    "\n\013origin_node\030\002 \001(\t\022\"\n\005query\030\003 \001(\0132\023.min"
+    "i2.QueryRequest\022$\n\010bft_meta\030\004 \001(\0132\022.mini"
+    "2.BftMetadata\"\324\001\n\017ForwardResponse\022\022\n\nreq"
+    "uest_id\030\001 \001(\t\022\023\n\013source_node\030\002 \001(\t\022%\n\007re"
+    "cords\030\003 \003(\0132\024.mini2.TripRecordMsg\022\027\n\017agg"
+    "regation_sum\030\004 \001(\001\022\027\n\017aggregation_avg\030\005 "
+    "\001(\001\022\031\n\021aggregation_count\030\006 \001(\003\022$\n\010bft_me"
+    "ta\030\007 \001(\0132\022.mini2.BftMetadata\"~\n\013BftMetad"
+    "ata\022\017\n\007node_id\030\001 \001(\t\022\024\n\014payload_hash\030\002 \001"
+    "(\t\022\020\n\010auth_tag\030\003 \001(\t\022\r\n\005nonce\030\004 \001(\004\022\024\n\014t"
+    "imestamp_ms\030\005 \001(\003\022\021\n\talgorithm\030\006 \001(\t\"#\n\r"
+    "CancelRequest\022\022\n\nrequest_id\030\001 \001(\t\"&\n\016Can"
+    "celResponse\022\024\n\014acknowledged\030\001 \001(\0102\373\001\n\013No"
+    "deService\0228\n\013SubmitQuery\022\023.mini2.QueryRe"
+    "quest\032\024.mini2.ChunkResponse\0227\n\nFetchChun"
+    "k\022\023.mini2.ChunkRequest\032\024.mini2.ChunkResp"
+    "onse\022=\n\014ForwardQuery\022\025.mini2.ForwardRequ"
+    "est\032\026.mini2.ForwardResponse\022:\n\013CancelQue"
+    "ry\022\024.mini2.CancelRequest\032\025.mini2.CancelR"
+    "esponseb\006proto3"
 };
 static ::absl::once_flag descriptor_table_mini2_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_mini2_2eproto = {
     false,
     false,
-    1894,
+    2175,
     descriptor_table_protodef_mini2_2eproto,
     "mini2.proto",
     &descriptor_table_mini2_2eproto_once,
     nullptr,
     0,
-    12,
+    13,
     schemas,
     file_default_instances,
     TableStruct_mini2_2eproto::offsets,
@@ -1950,6 +2025,9 @@ QueryRequest::QueryRequest(
   _impl_.combined_query_ = (CheckHasBit(cached_has_bits, 0x00000020U))
                 ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.combined_query_)
                 : nullptr;
+  _impl_.bft_meta_ = (CheckHasBit(cached_has_bits, 0x00000040U))
+                ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_)
+                : nullptr;
 
   // @@protoc_insertion_point(copy_constructor:mini2.QueryRequest)
 }
@@ -1965,9 +2043,9 @@ inline void QueryRequest::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   ::memset(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, time_query_),
            0,
-           offsetof(Impl_, combined_query_) -
+           offsetof(Impl_, bft_meta_) -
                offsetof(Impl_, time_query_) +
-               sizeof(Impl_::combined_query_));
+               sizeof(Impl_::bft_meta_));
 }
 QueryRequest::~QueryRequest() {
   // @@protoc_insertion_point(destructor:mini2.QueryRequest)
@@ -1986,6 +2064,7 @@ inline void QueryRequest::SharedDtor(MessageLite& self) {
   delete this_._impl_.numeric_query_;
   delete this_._impl_.int_query_;
   delete this_._impl_.combined_query_;
+  delete this_._impl_.bft_meta_;
   this_._impl_.~Impl_();
 }
 
@@ -2031,17 +2110,17 @@ QueryRequest::GetClassData() const {
   return QueryRequest_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 6, 4, 47, 2>
+const ::_pbi::TcParseTable<3, 7, 5, 47, 2>
 QueryRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_._has_bits_),
     0, // no _extensions_
-    6, 56,  // max_field_number, fast_idx_mask
+    7, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967232,  // skipmap
+    4294967168,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    6,  // num_field_entries
-    4,  // num_aux_entries
+    7,  // num_field_entries
+    5,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     QueryRequest_class_data_.base(),
     nullptr,  // post_loop_handler
@@ -2075,7 +2154,10 @@ QueryRequest::_table_ = {
     {::_pbi::TcParser::FastMtS1,
      {50, 5, 3,
       PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.combined_query_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // .mini2.BftMetadata bft_meta = 7;
+    {::_pbi::TcParser::FastMtS1,
+     {58, 6, 4,
+      PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.bft_meta_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -2091,12 +2173,15 @@ QueryRequest::_table_ = {
     {PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.int_query_), _Internal::kHasBitsOffset + 4, 2, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
     // .mini2.CombinedQuery combined_query = 6;
     {PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.combined_query_), _Internal::kHasBitsOffset + 5, 3, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .mini2.BftMetadata bft_meta = 7;
+    {PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.bft_meta_), _Internal::kHasBitsOffset + 6, 4, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::mini2::TimeRangeQuery>()},
       {::_pbi::TcParser::GetTable<::mini2::NumericRangeQuery>()},
       {::_pbi::TcParser::GetTable<::mini2::IntRangeQuery>()},
       {::_pbi::TcParser::GetTable<::mini2::CombinedQuery>()},
+      {::_pbi::TcParser::GetTable<::mini2::BftMetadata>()},
   }},
   {{
     "\22\12\12\0\0\0\0\0"
@@ -2113,7 +2198,7 @@ PROTOBUF_NOINLINE void QueryRequest::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000007fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       _impl_.request_id_.ClearNonDefaultToEmpty();
     }
@@ -2135,6 +2220,10 @@ PROTOBUF_NOINLINE void QueryRequest::Clear() {
     if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       ABSL_DCHECK(_impl_.combined_query_ != nullptr);
       _impl_.combined_query_->Clear();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+      ABSL_DCHECK(_impl_.bft_meta_ != nullptr);
+      _impl_.bft_meta_->Clear();
     }
   }
   _impl_._has_bits_.Clear();
@@ -2208,6 +2297,13 @@ PROTOBUF_NOINLINE void QueryRequest::Clear() {
         stream);
   }
 
+  // .mini2.BftMetadata bft_meta = 7;
+  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        7, *this_._impl_.bft_meta_, this_._impl_.bft_meta_->GetCachedSize(), target,
+        stream);
+  }
+
   if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
     target =
         ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -2233,7 +2329,7 @@ PROTOBUF_NOINLINE void QueryRequest::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000007fU)) {
     // string request_id = 1;
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       if (!this_._internal_request_id().empty()) {
@@ -2268,6 +2364,11 @@ PROTOBUF_NOINLINE void QueryRequest::Clear() {
       total_size += 1 +
                     ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.combined_query_);
     }
+    // .mini2.BftMetadata bft_meta = 7;
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+      total_size += 1 +
+                    ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.bft_meta_);
+    }
   }
   return this_.MaybeComputeUnknownFieldsSize(total_size,
                                              &this_._impl_._cached_size_);
@@ -2288,7 +2389,7 @@ void QueryRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000007fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       if (!from._internal_request_id().empty()) {
         _this->_internal_set_request_id(from._internal_request_id());
@@ -2339,6 +2440,14 @@ void QueryRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
         _this->_impl_.combined_query_->MergeFrom(*from._impl_.combined_query_);
       }
     }
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+      ABSL_DCHECK(from._impl_.bft_meta_ != nullptr);
+      if (_this->_impl_.bft_meta_ == nullptr) {
+        _this->_impl_.bft_meta_ = ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_);
+      } else {
+        _this->_impl_.bft_meta_->MergeFrom(*from._impl_.bft_meta_);
+      }
+    }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
@@ -2362,8 +2471,8 @@ void QueryRequest::InternalSwap(QueryRequest* PROTOBUF_RESTRICT PROTOBUF_NONNULL
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.request_id_, &other->_impl_.request_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.query_type_, &other->_impl_.query_type_, arena);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.combined_query_)
-      + sizeof(QueryRequest::_impl_.combined_query_)
+      PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.bft_meta_)
+      + sizeof(QueryRequest::_impl_.bft_meta_)
       - PROTOBUF_FIELD_OFFSET(QueryRequest, _impl_.time_query_)>(
           reinterpret_cast<char*>(&_impl_.time_query_),
           reinterpret_cast<char*>(&other->_impl_.time_query_));
@@ -3136,6 +3245,10 @@ ChunkResponse::ChunkResponse(
   _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
       from._internal_metadata_);
   new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.bft_meta_ = (CheckHasBit(cached_has_bits, 0x00000004U))
+                ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_)
+                : nullptr;
   ::memcpy(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, chunk_index_),
            reinterpret_cast<const char*>(&from._impl_) +
@@ -3164,10 +3277,10 @@ PROTOBUF_NDEBUG_INLINE ChunkResponse::Impl_::Impl_(
 inline void ChunkResponse::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
   ::memset(reinterpret_cast<char*>(&_impl_) +
-               offsetof(Impl_, chunk_index_),
+               offsetof(Impl_, bft_meta_),
            0,
            offsetof(Impl_, aggregation_count_) -
-               offsetof(Impl_, chunk_index_) +
+               offsetof(Impl_, bft_meta_) +
                sizeof(Impl_::aggregation_count_));
 }
 ChunkResponse::~ChunkResponse() {
@@ -3182,6 +3295,7 @@ inline void ChunkResponse::SharedDtor(MessageLite& self) {
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
   this_._impl_.request_id_.Destroy();
+  delete this_._impl_.bft_meta_;
   this_._impl_.~Impl_();
 }
 
@@ -3246,17 +3360,17 @@ ChunkResponse::GetClassData() const {
   return ChunkResponse_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<4, 9, 1, 46, 2>
+const ::_pbi::TcParseTable<4, 10, 2, 46, 2>
 ChunkResponse::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_._has_bits_),
     0, // no _extensions_
-    9, 120,  // max_field_number, fast_idx_mask
+    10, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294966784,  // skipmap
+    4294966272,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    9,  // num_field_entries
-    1,  // num_aux_entries
+    10,  // num_field_entries
+    2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     ChunkResponse_class_data_.base(),
     nullptr,  // post_loop_handler
@@ -3271,16 +3385,16 @@ ChunkResponse::_table_ = {
      {10, 1, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.request_id_)}},
     // int32 chunk_index = 2;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.chunk_index_), 2>(),
-     {16, 2, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.chunk_index_), 3>(),
+     {16, 3, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.chunk_index_)}},
     // int32 total_chunks = 3;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.total_chunks_), 3>(),
-     {24, 3, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.total_chunks_), 4>(),
+     {24, 4, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.total_chunks_)}},
     // bool is_last = 4;
-    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(ChunkResponse, _impl_.is_last_), 5>(),
-     {32, 5, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(ChunkResponse, _impl_.is_last_), 6>(),
+     {32, 6, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_)}},
     // repeated .mini2.TripRecordMsg records = 5;
     {::_pbi::TcParser::FastMtR1,
@@ -3288,21 +3402,24 @@ ChunkResponse::_table_ = {
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.records_)}},
     // double aggregation_sum = 6;
     {::_pbi::TcParser::FastF64S1,
-     {49, 4, 0,
+     {49, 5, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_sum_)}},
     // double aggregation_avg = 7;
     {::_pbi::TcParser::FastF64S1,
-     {57, 7, 0,
+     {57, 8, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_)}},
     // int64 aggregation_count = 8;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ChunkResponse, _impl_.aggregation_count_), 8>(),
-     {64, 8, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ChunkResponse, _impl_.aggregation_count_), 9>(),
+     {64, 9, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_)}},
     // int32 effective_chunk_size = 9;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.effective_chunk_size_), 6>(),
-     {72, 6, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.effective_chunk_size_), 7>(),
+     {72, 7, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.effective_chunk_size_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // .mini2.BftMetadata bft_meta = 10;
+    {::_pbi::TcParser::FastMtS1,
+     {82, 2, 1,
+      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.bft_meta_)}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
@@ -3314,24 +3431,27 @@ ChunkResponse::_table_ = {
     // string request_id = 1;
     {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.request_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
     // int32 chunk_index = 2;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.chunk_index_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.chunk_index_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
     // int32 total_chunks = 3;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.total_chunks_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.total_chunks_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
     // bool is_last = 4;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
     // repeated .mini2.TripRecordMsg records = 5;
     {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.records_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
     // double aggregation_sum = 6;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_sum_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_sum_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // double aggregation_avg = 7;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 8, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // int64 aggregation_count = 8;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 8, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 9, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
     // int32 effective_chunk_size = 9;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.effective_chunk_size_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.effective_chunk_size_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    // .mini2.BftMetadata bft_meta = 10;
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.bft_meta_), _Internal::kHasBitsOffset + 2, 1, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::mini2::TripRecordMsg>()},
+      {::_pbi::TcParser::GetTable<::mini2::BftMetadata>()},
   }},
   {{
     "\23\12\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
@@ -3347,20 +3467,28 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       _impl_.records_.Clear();
     }
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
       _impl_.request_id_.ClearNonDefaultToEmpty();
     }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      ABSL_DCHECK(_impl_.bft_meta_ != nullptr);
+      _impl_.bft_meta_->Clear();
+    }
   }
-  if (BatchCheckHasBit(cached_has_bits, 0x000000fcU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x000000f8U)) {
     ::memset(&_impl_.chunk_index_, 0, static_cast<::size_t>(
-        reinterpret_cast<char*>(&_impl_.aggregation_avg_) -
-        reinterpret_cast<char*>(&_impl_.chunk_index_)) + sizeof(_impl_.aggregation_avg_));
+        reinterpret_cast<char*>(&_impl_.effective_chunk_size_) -
+        reinterpret_cast<char*>(&_impl_.chunk_index_)) + sizeof(_impl_.effective_chunk_size_));
   }
-  _impl_.aggregation_count_ = ::int64_t{0};
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
+    ::memset(&_impl_.aggregation_avg_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.aggregation_count_) -
+        reinterpret_cast<char*>(&_impl_.aggregation_avg_)) + sizeof(_impl_.aggregation_count_));
+  }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -3395,7 +3523,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // int32 chunk_index = 2;
-  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
     if (this_._internal_chunk_index() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<2>(
@@ -3404,7 +3532,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // int32 total_chunks = 3;
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
     if (this_._internal_total_chunks() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<3>(
@@ -3413,7 +3541,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // bool is_last = 4;
-  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
     if (this_._internal_is_last() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteBoolToArray(
@@ -3435,7 +3563,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // double aggregation_sum = 6;
-  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
     if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_sum()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteDoubleToArray(
@@ -3444,7 +3572,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // double aggregation_avg = 7;
-  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
     if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteDoubleToArray(
@@ -3453,7 +3581,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // int64 aggregation_count = 8;
-  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000200U)) {
     if (this_._internal_aggregation_count() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<8>(
@@ -3462,12 +3590,19 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // int32 effective_chunk_size = 9;
-  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
     if (this_._internal_effective_chunk_size() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<9>(
               stream, this_._internal_effective_chunk_size(), target);
     }
+  }
+
+  // .mini2.BftMetadata bft_meta = 10;
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        10, *this_._impl_.bft_meta_, this_._impl_.bft_meta_->GetCachedSize(), target,
+        stream);
   }
 
   if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -3510,49 +3645,54 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
                                         this_._internal_request_id());
       }
     }
-    // int32 chunk_index = 2;
+    // .mini2.BftMetadata bft_meta = 10;
     if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      total_size += 1 +
+                    ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.bft_meta_);
+    }
+    // int32 chunk_index = 2;
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (this_._internal_chunk_index() != 0) {
         total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
             this_._internal_chunk_index());
       }
     }
     // int32 total_chunks = 3;
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (this_._internal_total_chunks() != 0) {
         total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
             this_._internal_total_chunks());
       }
     }
     // double aggregation_sum = 6;
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_sum()) != 0) {
         total_size += 9;
       }
     }
     // bool is_last = 4;
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (this_._internal_is_last() != 0) {
         total_size += 2;
       }
     }
     // int32 effective_chunk_size = 9;
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (this_._internal_effective_chunk_size() != 0) {
         total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
             this_._internal_effective_chunk_size());
       }
     }
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
     // double aggregation_avg = 7;
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
         total_size += 9;
       }
     }
-  }
-   {
     // int64 aggregation_count = 8;
-    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000200U)) {
       if (this_._internal_aggregation_count() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_aggregation_count());
@@ -3594,39 +3734,49 @@ void ChunkResponse::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      ABSL_DCHECK(from._impl_.bft_meta_ != nullptr);
+      if (_this->_impl_.bft_meta_ == nullptr) {
+        _this->_impl_.bft_meta_ = ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_);
+      } else {
+        _this->_impl_.bft_meta_->MergeFrom(*from._impl_.bft_meta_);
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (from._internal_chunk_index() != 0) {
         _this->_impl_.chunk_index_ = from._impl_.chunk_index_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (from._internal_total_chunks() != 0) {
         _this->_impl_.total_chunks_ = from._impl_.total_chunks_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (::absl::bit_cast<::uint64_t>(from._internal_aggregation_sum()) != 0) {
         _this->_impl_.aggregation_sum_ = from._impl_.aggregation_sum_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (from._internal_is_last() != 0) {
         _this->_impl_.is_last_ = from._impl_.is_last_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (from._internal_effective_chunk_size() != 0) {
         _this->_impl_.effective_chunk_size_ = from._impl_.effective_chunk_size_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (::absl::bit_cast<::uint64_t>(from._internal_aggregation_avg()) != 0) {
         _this->_impl_.aggregation_avg_ = from._impl_.aggregation_avg_;
       }
     }
-  }
-  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
-    if (from._internal_aggregation_count() != 0) {
-      _this->_impl_.aggregation_count_ = from._impl_.aggregation_count_;
+    if (CheckHasBit(cached_has_bits, 0x00000200U)) {
+      if (from._internal_aggregation_count() != 0) {
+        _this->_impl_.aggregation_count_ = from._impl_.aggregation_count_;
+      }
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -3653,9 +3803,9 @@ void ChunkResponse::InternalSwap(ChunkResponse* PROTOBUF_RESTRICT PROTOBUF_NONNU
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_)
       + sizeof(ChunkResponse::_impl_.aggregation_count_)
-      - PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.chunk_index_)>(
-          reinterpret_cast<char*>(&_impl_.chunk_index_),
-          reinterpret_cast<char*>(&other->_impl_.chunk_index_));
+      - PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.bft_meta_)>(
+          reinterpret_cast<char*>(&_impl_.bft_meta_),
+          reinterpret_cast<char*>(&other->_impl_.bft_meta_));
 }
 
 ::google::protobuf::Metadata ChunkResponse::GetMetadata() const {
@@ -4014,6 +4164,9 @@ ForwardRequest::ForwardRequest(
   _impl_.query_ = (CheckHasBit(cached_has_bits, 0x00000004U))
                 ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.query_)
                 : nullptr;
+  _impl_.bft_meta_ = (CheckHasBit(cached_has_bits, 0x00000008U))
+                ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_)
+                : nullptr;
 
   // @@protoc_insertion_point(copy_constructor:mini2.ForwardRequest)
 }
@@ -4026,7 +4179,12 @@ PROTOBUF_NDEBUG_INLINE ForwardRequest::Impl_::Impl_(
 
 inline void ForwardRequest::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  _impl_.query_ = {};
+  ::memset(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, query_),
+           0,
+           offsetof(Impl_, bft_meta_) -
+               offsetof(Impl_, query_) +
+               sizeof(Impl_::bft_meta_));
 }
 ForwardRequest::~ForwardRequest() {
   // @@protoc_insertion_point(destructor:mini2.ForwardRequest)
@@ -4042,6 +4200,7 @@ inline void ForwardRequest::SharedDtor(MessageLite& self) {
   this_._impl_.request_id_.Destroy();
   this_._impl_.origin_node_.Destroy();
   delete this_._impl_.query_;
+  delete this_._impl_.bft_meta_;
   this_._impl_.~Impl_();
 }
 
@@ -4087,17 +4246,17 @@ ForwardRequest::GetClassData() const {
   return ForwardRequest_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 3, 1, 50, 2>
+const ::_pbi::TcParseTable<2, 4, 2, 50, 2>
 ForwardRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_._has_bits_),
     0, // no _extensions_
-    3, 24,  // max_field_number, fast_idx_mask
+    4, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967288,  // skipmap
+    4294967280,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    3,  // num_field_entries
-    1,  // num_aux_entries
+    4,  // num_field_entries
+    2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     ForwardRequest_class_data_.base(),
     nullptr,  // post_loop_handler
@@ -4106,7 +4265,10 @@ ForwardRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::mini2::ForwardRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    {::_pbi::TcParser::MiniParse, {}},
+    // .mini2.BftMetadata bft_meta = 4;
+    {::_pbi::TcParser::FastMtS1,
+     {34, 3, 1,
+      PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.bft_meta_)}},
     // string request_id = 1;
     {::_pbi::TcParser::FastUS1,
      {10, 0, 0,
@@ -4128,9 +4290,12 @@ ForwardRequest::_table_ = {
     {PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.origin_node_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
     // .mini2.QueryRequest query = 3;
     {PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.query_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .mini2.BftMetadata bft_meta = 4;
+    {PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.bft_meta_), _Internal::kHasBitsOffset + 3, 1, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::mini2::QueryRequest>()},
+      {::_pbi::TcParser::GetTable<::mini2::BftMetadata>()},
   }},
   {{
     "\24\12\13\0\0\0\0\0"
@@ -4147,7 +4312,7 @@ PROTOBUF_NOINLINE void ForwardRequest::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       _impl_.request_id_.ClearNonDefaultToEmpty();
     }
@@ -4157,6 +4322,10 @@ PROTOBUF_NOINLINE void ForwardRequest::Clear() {
     if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       ABSL_DCHECK(_impl_.query_ != nullptr);
       _impl_.query_->Clear();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      ABSL_DCHECK(_impl_.bft_meta_ != nullptr);
+      _impl_.bft_meta_->Clear();
     }
   }
   _impl_._has_bits_.Clear();
@@ -4209,6 +4378,13 @@ PROTOBUF_NOINLINE void ForwardRequest::Clear() {
         stream);
   }
 
+  // .mini2.BftMetadata bft_meta = 4;
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        4, *this_._impl_.bft_meta_, this_._impl_.bft_meta_->GetCachedSize(), target,
+        stream);
+  }
+
   if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
     target =
         ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -4234,7 +4410,7 @@ PROTOBUF_NOINLINE void ForwardRequest::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
     // string request_id = 1;
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       if (!this_._internal_request_id().empty()) {
@@ -4253,6 +4429,11 @@ PROTOBUF_NOINLINE void ForwardRequest::Clear() {
     if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       total_size += 1 +
                     ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.query_);
+    }
+    // .mini2.BftMetadata bft_meta = 4;
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      total_size += 1 +
+                    ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.bft_meta_);
     }
   }
   return this_.MaybeComputeUnknownFieldsSize(total_size,
@@ -4274,7 +4455,7 @@ void ForwardRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       if (!from._internal_request_id().empty()) {
         _this->_internal_set_request_id(from._internal_request_id());
@@ -4301,6 +4482,14 @@ void ForwardRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
         _this->_impl_.query_->MergeFrom(*from._impl_.query_);
       }
     }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      ABSL_DCHECK(from._impl_.bft_meta_ != nullptr);
+      if (_this->_impl_.bft_meta_ == nullptr) {
+        _this->_impl_.bft_meta_ = ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_);
+      } else {
+        _this->_impl_.bft_meta_->MergeFrom(*from._impl_.bft_meta_);
+      }
+    }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
@@ -4323,7 +4512,12 @@ void ForwardRequest::InternalSwap(ForwardRequest* PROTOBUF_RESTRICT PROTOBUF_NON
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.request_id_, &other->_impl_.request_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.origin_node_, &other->_impl_.origin_node_, arena);
-  swap(_impl_.query_, other->_impl_.query_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.bft_meta_)
+      + sizeof(ForwardRequest::_impl_.bft_meta_)
+      - PROTOBUF_FIELD_OFFSET(ForwardRequest, _impl_.query_)>(
+          reinterpret_cast<char*>(&_impl_.query_),
+          reinterpret_cast<char*>(&other->_impl_.query_));
 }
 
 ::google::protobuf::Metadata ForwardRequest::GetMetadata() const {
@@ -4379,6 +4573,10 @@ ForwardResponse::ForwardResponse(
   _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
       from._internal_metadata_);
   new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.bft_meta_ = (CheckHasBit(cached_has_bits, 0x00000008U))
+                ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_)
+                : nullptr;
   ::memcpy(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, aggregation_sum_),
            reinterpret_cast<const char*>(&from._impl_) +
@@ -4408,10 +4606,10 @@ PROTOBUF_NDEBUG_INLINE ForwardResponse::Impl_::Impl_(
 inline void ForwardResponse::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
   ::memset(reinterpret_cast<char*>(&_impl_) +
-               offsetof(Impl_, aggregation_sum_),
+               offsetof(Impl_, bft_meta_),
            0,
            offsetof(Impl_, aggregation_count_) -
-               offsetof(Impl_, aggregation_sum_) +
+               offsetof(Impl_, bft_meta_) +
                sizeof(Impl_::aggregation_count_));
 }
 ForwardResponse::~ForwardResponse() {
@@ -4427,6 +4625,7 @@ inline void ForwardResponse::SharedDtor(MessageLite& self) {
   ABSL_DCHECK(this_.GetArena() == nullptr);
   this_._impl_.request_id_.Destroy();
   this_._impl_.source_node_.Destroy();
+  delete this_._impl_.bft_meta_;
   this_._impl_.~Impl_();
 }
 
@@ -4491,17 +4690,17 @@ ForwardResponse::GetClassData() const {
   return ForwardResponse_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 6, 1, 51, 2>
+const ::_pbi::TcParseTable<3, 7, 2, 51, 2>
 ForwardResponse::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_._has_bits_),
     0, // no _extensions_
-    6, 56,  // max_field_number, fast_idx_mask
+    7, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967232,  // skipmap
+    4294967168,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    6,  // num_field_entries
-    1,  // num_aux_entries
+    7,  // num_field_entries
+    2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     ForwardResponse_class_data_.base(),
     nullptr,  // post_loop_handler
@@ -4525,17 +4724,20 @@ ForwardResponse::_table_ = {
       PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.records_)}},
     // double aggregation_sum = 4;
     {::_pbi::TcParser::FastF64S1,
-     {33, 3, 0,
+     {33, 4, 0,
       PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_sum_)}},
     // double aggregation_avg = 5;
     {::_pbi::TcParser::FastF64S1,
-     {41, 4, 0,
+     {41, 5, 0,
       PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_avg_)}},
     // int64 aggregation_count = 6;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ForwardResponse, _impl_.aggregation_count_), 5>(),
-     {48, 5, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ForwardResponse, _impl_.aggregation_count_), 6>(),
+     {48, 6, 0,
       PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_count_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // .mini2.BftMetadata bft_meta = 7;
+    {::_pbi::TcParser::FastMtS1,
+     {58, 3, 1,
+      PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.bft_meta_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -4546,14 +4748,17 @@ ForwardResponse::_table_ = {
     // repeated .mini2.TripRecordMsg records = 3;
     {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.records_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
     // double aggregation_sum = 4;
-    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_sum_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
+    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_sum_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // double aggregation_avg = 5;
-    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
+    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // int64 aggregation_count = 6;
-    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    // .mini2.BftMetadata bft_meta = 7;
+    {PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.bft_meta_), _Internal::kHasBitsOffset + 3, 1, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::mini2::TripRecordMsg>()},
+      {::_pbi::TcParser::GetTable<::mini2::BftMetadata>()},
   }},
   {{
     "\25\12\13\0\0\0\0\0"
@@ -4570,7 +4775,7 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       _impl_.records_.Clear();
     }
@@ -4580,8 +4785,12 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
     if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       _impl_.source_node_.ClearNonDefaultToEmpty();
     }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      ABSL_DCHECK(_impl_.bft_meta_ != nullptr);
+      _impl_.bft_meta_->Clear();
+    }
   }
-  if (BatchCheckHasBit(cached_has_bits, 0x00000038U)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x00000070U)) {
     ::memset(&_impl_.aggregation_sum_, 0, static_cast<::size_t>(
         reinterpret_cast<char*>(&_impl_.aggregation_count_) -
         reinterpret_cast<char*>(&_impl_.aggregation_sum_)) + sizeof(_impl_.aggregation_count_));
@@ -4643,7 +4852,7 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
   }
 
   // double aggregation_sum = 4;
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
     if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_sum()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteDoubleToArray(
@@ -4652,7 +4861,7 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
   }
 
   // double aggregation_avg = 5;
-  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
     if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteDoubleToArray(
@@ -4661,12 +4870,19 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
   }
 
   // int64 aggregation_count = 6;
-  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
     if (this_._internal_aggregation_count() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<6>(
               stream, this_._internal_aggregation_count(), target);
     }
+  }
+
+  // .mini2.BftMetadata bft_meta = 7;
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        7, *this_._impl_.bft_meta_, this_._impl_.bft_meta_->GetCachedSize(), target,
+        stream);
   }
 
   if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -4694,7 +4910,7 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000007fU)) {
     // repeated .mini2.TripRecordMsg records = 3;
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       total_size += 1UL * this_._internal_records_size();
@@ -4716,20 +4932,25 @@ PROTOBUF_NOINLINE void ForwardResponse::Clear() {
                                         this_._internal_source_node());
       }
     }
-    // double aggregation_sum = 4;
+    // .mini2.BftMetadata bft_meta = 7;
     if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      total_size += 1 +
+                    ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.bft_meta_);
+    }
+    // double aggregation_sum = 4;
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_sum()) != 0) {
         total_size += 9;
       }
     }
     // double aggregation_avg = 5;
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
         total_size += 9;
       }
     }
     // int64 aggregation_count = 6;
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (this_._internal_aggregation_count() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_aggregation_count());
@@ -4755,7 +4976,7 @@ void ForwardResponse::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000007fU)) {
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       _this->_internal_mutable_records()->InternalMergeFromWithArena(
           ::google::protobuf::MessageLite::internal_visibility(), arena,
@@ -4780,16 +5001,24 @@ void ForwardResponse::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      ABSL_DCHECK(from._impl_.bft_meta_ != nullptr);
+      if (_this->_impl_.bft_meta_ == nullptr) {
+        _this->_impl_.bft_meta_ = ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.bft_meta_);
+      } else {
+        _this->_impl_.bft_meta_->MergeFrom(*from._impl_.bft_meta_);
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (::absl::bit_cast<::uint64_t>(from._internal_aggregation_sum()) != 0) {
         _this->_impl_.aggregation_sum_ = from._impl_.aggregation_sum_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (::absl::bit_cast<::uint64_t>(from._internal_aggregation_avg()) != 0) {
         _this->_impl_.aggregation_avg_ = from._impl_.aggregation_avg_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (from._internal_aggregation_count() != 0) {
         _this->_impl_.aggregation_count_ = from._impl_.aggregation_count_;
       }
@@ -4820,12 +5049,491 @@ void ForwardResponse::InternalSwap(ForwardResponse* PROTOBUF_RESTRICT PROTOBUF_N
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_count_)
       + sizeof(ForwardResponse::_impl_.aggregation_count_)
-      - PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.aggregation_sum_)>(
-          reinterpret_cast<char*>(&_impl_.aggregation_sum_),
-          reinterpret_cast<char*>(&other->_impl_.aggregation_sum_));
+      - PROTOBUF_FIELD_OFFSET(ForwardResponse, _impl_.bft_meta_)>(
+          reinterpret_cast<char*>(&_impl_.bft_meta_),
+          reinterpret_cast<char*>(&other->_impl_.bft_meta_));
 }
 
 ::google::protobuf::Metadata ForwardResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class BftMetadata::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<BftMetadata>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_._has_bits_);
+};
+
+BftMetadata::BftMetadata(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, BftMetadata_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:mini2.BftMetadata)
+}
+PROTOBUF_NDEBUG_INLINE BftMetadata::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    [[maybe_unused]] const ::mini2::BftMetadata& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        node_id_(arena, from.node_id_),
+        payload_hash_(arena, from.payload_hash_),
+        auth_tag_(arena, from.auth_tag_),
+        algorithm_(arena, from.algorithm_) {}
+
+BftMetadata::BftMetadata(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const BftMetadata& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, BftMetadata_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  BftMetadata* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, nonce_),
+           reinterpret_cast<const char*>(&from._impl_) +
+               offsetof(Impl_, nonce_),
+           offsetof(Impl_, timestamp_ms_) -
+               offsetof(Impl_, nonce_) +
+               sizeof(Impl_::timestamp_ms_));
+
+  // @@protoc_insertion_point(copy_constructor:mini2.BftMetadata)
+}
+PROTOBUF_NDEBUG_INLINE BftMetadata::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        node_id_(arena),
+        payload_hash_(arena),
+        auth_tag_(arena),
+        algorithm_(arena) {}
+
+inline void BftMetadata::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, nonce_),
+           0,
+           offsetof(Impl_, timestamp_ms_) -
+               offsetof(Impl_, nonce_) +
+               sizeof(Impl_::timestamp_ms_));
+}
+BftMetadata::~BftMetadata() {
+  // @@protoc_insertion_point(destructor:mini2.BftMetadata)
+  SharedDtor(*this);
+}
+inline void BftMetadata::SharedDtor(MessageLite& self) {
+  BftMetadata& this_ = static_cast<BftMetadata&>(self);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.node_id_.Destroy();
+  this_._impl_.payload_hash_.Destroy();
+  this_._impl_.auth_tag_.Destroy();
+  this_._impl_.algorithm_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL BftMetadata::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) BftMetadata(arena);
+}
+constexpr auto BftMetadata::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(BftMetadata),
+                                            alignof(BftMetadata));
+}
+constexpr auto BftMetadata::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_BftMetadata_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // IsInitialized
+          &BftMetadata::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<BftMetadata>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &BftMetadata::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<BftMetadata>(), &BftMetadata::ByteSizeLong,
+              &BftMetadata::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_._cached_size_),
+          false,
+      },
+      &BftMetadata::kDescriptorMethods,
+      &descriptor_table_mini2_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull BftMetadata_class_data_ =
+        BftMetadata::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+BftMetadata::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&BftMetadata_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(BftMetadata_class_data_.tc_table);
+  return BftMetadata_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 6, 0, 62, 2>
+BftMetadata::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_._has_bits_),
+    0, // no _extensions_
+    6, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967232,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    6,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    BftMetadata_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::mini2::BftMetadata>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // string node_id = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 0, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.node_id_)}},
+    // string payload_hash = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 1, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.payload_hash_)}},
+    // string auth_tag = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 2, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.auth_tag_)}},
+    // uint64 nonce = 4;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(BftMetadata, _impl_.nonce_), 4>(),
+     {32, 4, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.nonce_)}},
+    // int64 timestamp_ms = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(BftMetadata, _impl_.timestamp_ms_), 5>(),
+     {40, 5, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.timestamp_ms_)}},
+    // string algorithm = 6;
+    {::_pbi::TcParser::FastUS1,
+     {50, 3, 0,
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.algorithm_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string node_id = 1;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.node_id_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string payload_hash = 2;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.payload_hash_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string auth_tag = 3;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.auth_tag_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // uint64 nonce = 4;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.nonce_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+    // int64 timestamp_ms = 5;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.timestamp_ms_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    // string algorithm = 6;
+    {PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.algorithm_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\21\7\14\10\0\0\11\0"
+    "mini2.BftMetadata"
+    "node_id"
+    "payload_hash"
+    "auth_tag"
+    "algorithm"
+  }},
+};
+PROTOBUF_NOINLINE void BftMetadata::Clear() {
+// @@protoc_insertion_point(message_clear_start:mini2.BftMetadata)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      _impl_.node_id_.ClearNonDefaultToEmpty();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      _impl_.payload_hash_.ClearNonDefaultToEmpty();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      _impl_.auth_tag_.ClearNonDefaultToEmpty();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      _impl_.algorithm_.ClearNonDefaultToEmpty();
+    }
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000030U)) {
+    ::memset(&_impl_.nonce_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.timestamp_ms_) -
+        reinterpret_cast<char*>(&_impl_.nonce_)) + sizeof(_impl_.timestamp_ms_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL BftMetadata::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const BftMetadata& this_ = static_cast<const BftMetadata&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL BftMetadata::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const BftMetadata& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(serialize_to_array_start:mini2.BftMetadata)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = this_._impl_._has_bits_[0];
+  // string node_id = 1;
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    if (!this_._internal_node_id().empty()) {
+      const ::std::string& _s = this_._internal_node_id();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "mini2.BftMetadata.node_id");
+      target = stream->WriteStringMaybeAliased(1, _s, target);
+    }
+  }
+
+  // string payload_hash = 2;
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (!this_._internal_payload_hash().empty()) {
+      const ::std::string& _s = this_._internal_payload_hash();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "mini2.BftMetadata.payload_hash");
+      target = stream->WriteStringMaybeAliased(2, _s, target);
+    }
+  }
+
+  // string auth_tag = 3;
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (!this_._internal_auth_tag().empty()) {
+      const ::std::string& _s = this_._internal_auth_tag();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "mini2.BftMetadata.auth_tag");
+      target = stream->WriteStringMaybeAliased(3, _s, target);
+    }
+  }
+
+  // uint64 nonce = 4;
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (this_._internal_nonce() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+          4, this_._internal_nonce(), target);
+    }
+  }
+
+  // int64 timestamp_ms = 5;
+  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (this_._internal_timestamp_ms() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<5>(
+              stream, this_._internal_timestamp_ms(), target);
+    }
+  }
+
+  // string algorithm = 6;
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (!this_._internal_algorithm().empty()) {
+      const ::std::string& _s = this_._internal_algorithm();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "mini2.BftMetadata.algorithm");
+      target = stream->WriteStringMaybeAliased(6, _s, target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:mini2.BftMetadata)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t BftMetadata::ByteSizeLong(const MessageLite& base) {
+  const BftMetadata& this_ = static_cast<const BftMetadata&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t BftMetadata::ByteSizeLong() const {
+  const BftMetadata& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:mini2.BftMetadata)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+    // string node_id = 1;
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      if (!this_._internal_node_id().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_node_id());
+      }
+    }
+    // string payload_hash = 2;
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (!this_._internal_payload_hash().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_payload_hash());
+      }
+    }
+    // string auth_tag = 3;
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (!this_._internal_auth_tag().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_auth_tag());
+      }
+    }
+    // string algorithm = 6;
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      if (!this_._internal_algorithm().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_algorithm());
+      }
+    }
+    // uint64 nonce = 4;
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+      if (this_._internal_nonce() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+            this_._internal_nonce());
+      }
+    }
+    // int64 timestamp_ms = 5;
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+      if (this_._internal_timestamp_ms() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+            this_._internal_timestamp_ms());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void BftMetadata::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                            const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this =
+      static_cast<BftMetadata*>(&to_msg);
+  auto& from = static_cast<const BftMetadata&>(from_msg);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    from.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(class_specific_merge_from_start:mini2.BftMetadata)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x0000003fU)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      if (!from._internal_node_id().empty()) {
+        _this->_internal_set_node_id(from._internal_node_id());
+      } else {
+        if (_this->_impl_.node_id_.IsDefault()) {
+          _this->_internal_set_node_id("");
+        }
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (!from._internal_payload_hash().empty()) {
+        _this->_internal_set_payload_hash(from._internal_payload_hash());
+      } else {
+        if (_this->_impl_.payload_hash_.IsDefault()) {
+          _this->_internal_set_payload_hash("");
+        }
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (!from._internal_auth_tag().empty()) {
+        _this->_internal_set_auth_tag(from._internal_auth_tag());
+      } else {
+        if (_this->_impl_.auth_tag_.IsDefault()) {
+          _this->_internal_set_auth_tag("");
+        }
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      if (!from._internal_algorithm().empty()) {
+        _this->_internal_set_algorithm(from._internal_algorithm());
+      } else {
+        if (_this->_impl_.algorithm_.IsDefault()) {
+          _this->_internal_set_algorithm("");
+        }
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+      if (from._internal_nonce() != 0) {
+        _this->_impl_.nonce_ = from._impl_.nonce_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+      if (from._internal_timestamp_ms() != 0) {
+        _this->_impl_.timestamp_ms_ = from._impl_.timestamp_ms_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+
+void BftMetadata::CopyFrom(const BftMetadata& from) {
+  // @@protoc_insertion_point(class_specific_copy_from_start:mini2.BftMetadata)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void BftMetadata::InternalSwap(BftMetadata* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.node_id_, &other->_impl_.node_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.payload_hash_, &other->_impl_.payload_hash_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.auth_tag_, &other->_impl_.auth_tag_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.algorithm_, &other->_impl_.algorithm_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.timestamp_ms_)
+      + sizeof(BftMetadata::_impl_.timestamp_ms_)
+      - PROTOBUF_FIELD_OFFSET(BftMetadata, _impl_.nonce_)>(
+          reinterpret_cast<char*>(&_impl_.nonce_),
+          reinterpret_cast<char*>(&other->_impl_.nonce_));
+}
+
+::google::protobuf::Metadata BftMetadata::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================

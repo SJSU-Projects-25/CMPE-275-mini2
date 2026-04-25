@@ -54,6 +54,10 @@ extern "C" {
 extern const ::google::protobuf::internal::DescriptorTable descriptor_table_mini2_2eproto;
 }  // extern "C"
 namespace mini2 {
+class BftMetadata;
+struct BftMetadataDefaultTypeInternal;
+extern BftMetadataDefaultTypeInternal _BftMetadata_default_instance_;
+extern const ::google::protobuf::internal::ClassDataFull BftMetadata_class_data_;
 class CancelRequest;
 struct CancelRequestDefaultTypeInternal;
 extern CancelRequestDefaultTypeInternal _CancelRequest_default_instance_;
@@ -1396,7 +1400,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CancelResponse final : public ::goo
     return *reinterpret_cast<const CancelResponse*>(
         &_CancelResponse_default_instance_);
   }
-  static constexpr int kIndexInFileMessages = 11;
+  static constexpr int kIndexInFileMessages = 12;
   friend void swap(CancelResponse& a, CancelResponse& b) { a.Swap(&b); }
   inline void Swap(CancelResponse* PROTOBUF_NONNULL other) {
     if (other == this) return;
@@ -1592,7 +1596,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CancelRequest final : public ::goog
     return *reinterpret_cast<const CancelRequest*>(
         &_CancelRequest_default_instance_);
   }
-  static constexpr int kIndexInFileMessages = 10;
+  static constexpr int kIndexInFileMessages = 11;
   friend void swap(CancelRequest& a, CancelRequest& b) { a.Swap(&b); }
   inline void Swap(CancelRequest* PROTOBUF_NONNULL other) {
     if (other == this) return;
@@ -1735,6 +1739,282 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CancelRequest final : public ::goog
 };
 
 extern const ::google::protobuf::internal::ClassDataFull CancelRequest_class_data_;
+// -------------------------------------------------------------------
+
+class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED BftMetadata final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:mini2.BftMetadata) */ {
+ public:
+  inline BftMetadata() : BftMetadata(nullptr) {}
+  ~BftMetadata() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(BftMetadata* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(BftMetadata));
+  }
+#endif
+
+  template <typename = void>
+  explicit constexpr BftMetadata(::google::protobuf::internal::ConstantInitialized);
+
+  inline BftMetadata(const BftMetadata& from) : BftMetadata(nullptr, from) {}
+  inline BftMetadata(BftMetadata&& from) noexcept
+      : BftMetadata(nullptr, ::std::move(from)) {}
+  inline BftMetadata& operator=(const BftMetadata& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline BftMetadata& operator=(BftMetadata&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  [[nodiscard]] inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  [[nodiscard]] inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL
+  mutable_unknown_fields() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL
+  GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  [[nodiscard]] static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  [[nodiscard]] static const BftMetadata& default_instance() {
+    return *reinterpret_cast<const BftMetadata*>(
+        &_BftMetadata_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 10;
+  friend void swap(BftMetadata& a, BftMetadata& b) { a.Swap(&b); }
+  inline void Swap(BftMetadata* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(BftMetadata* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  [[nodiscard]] BftMetadata* PROTOBUF_NONNULL
+  New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<BftMetadata>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const BftMetadata& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const BftMetadata& from) { BftMetadata::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  [[nodiscard]] bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  [[nodiscard]] static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  [[nodiscard]] static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  [[nodiscard]] ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] ::size_t ByteSizeLong() const final;
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] int GetCachedSize() const {
+    return _impl_._cached_size_.Get();
+  }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(BftMetadata* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "mini2.BftMetadata"; }
+
+  explicit BftMetadata(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  BftMetadata(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const BftMetadata& from);
+  BftMetadata(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, BftMetadata&& from) noexcept
+      : BftMetadata(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_();
+
+  [[nodiscard]] ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kNodeIdFieldNumber = 1,
+    kPayloadHashFieldNumber = 2,
+    kAuthTagFieldNumber = 3,
+    kAlgorithmFieldNumber = 6,
+    kNonceFieldNumber = 4,
+    kTimestampMsFieldNumber = 5,
+  };
+  // string node_id = 1;
+  void clear_node_id() ;
+  [[nodiscard]] const ::std::string& node_id() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_node_id(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_node_id();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_node_id();
+  void set_allocated_node_id(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_node_id() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_node_id(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_node_id();
+
+  public:
+  // string payload_hash = 2;
+  void clear_payload_hash() ;
+  [[nodiscard]] const ::std::string& payload_hash() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_payload_hash(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_payload_hash();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_payload_hash();
+  void set_allocated_payload_hash(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_payload_hash() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_payload_hash(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_payload_hash();
+
+  public:
+  // string auth_tag = 3;
+  void clear_auth_tag() ;
+  [[nodiscard]] const ::std::string& auth_tag() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_auth_tag(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_auth_tag();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_auth_tag();
+  void set_allocated_auth_tag(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_auth_tag() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_auth_tag(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_auth_tag();
+
+  public:
+  // string algorithm = 6;
+  void clear_algorithm() ;
+  [[nodiscard]] const ::std::string& algorithm() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_algorithm(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_algorithm();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_algorithm();
+  void set_allocated_algorithm(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_algorithm() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_algorithm(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_algorithm();
+
+  public:
+  // uint64 nonce = 4;
+  void clear_nonce() ;
+  [[nodiscard]] ::uint64_t nonce() const;
+  void set_nonce(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_nonce() const;
+  void _internal_set_nonce(::uint64_t value);
+
+  public:
+  // int64 timestamp_ms = 5;
+  void clear_timestamp_ms() ;
+  [[nodiscard]] ::int64_t timestamp_ms() const;
+  void set_timestamp_ms(::int64_t value);
+
+  private:
+  ::int64_t _internal_timestamp_ms() const;
+  void _internal_set_timestamp_ms(::int64_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:mini2.BftMetadata)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<3, 6,
+                                   0, 62,
+                                   2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  friend ::google::protobuf::internal::PrivateAccess;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                                    ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const BftMetadata& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::internal::ArenaStringPtr node_id_;
+    ::google::protobuf::internal::ArenaStringPtr payload_hash_;
+    ::google::protobuf::internal::ArenaStringPtr auth_tag_;
+    ::google::protobuf::internal::ArenaStringPtr algorithm_;
+    ::uint64_t nonce_;
+    ::int64_t timestamp_ms_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_mini2_2eproto;
+};
+
+extern const ::google::protobuf::internal::ClassDataFull BftMetadata_class_data_;
 // -------------------------------------------------------------------
 
 class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::google::protobuf::Message
@@ -1886,6 +2166,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
     kRecordsFieldNumber = 3,
     kRequestIdFieldNumber = 1,
     kSourceNodeFieldNumber = 2,
+    kBftMetaFieldNumber = 7,
     kAggregationSumFieldNumber = 4,
     kAggregationAvgFieldNumber = 5,
     kAggregationCountFieldNumber = 6,
@@ -1940,6 +2221,22 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
   ::std::string* PROTOBUF_NONNULL _internal_mutable_source_node();
 
   public:
+  // .mini2.BftMetadata bft_meta = 7;
+  [[nodiscard]] bool has_bft_meta()
+      const;
+  void clear_bft_meta() ;
+  [[nodiscard]] const ::mini2::BftMetadata& bft_meta() const;
+  [[nodiscard]] ::mini2::BftMetadata* PROTOBUF_NULLABLE release_bft_meta();
+  ::mini2::BftMetadata* PROTOBUF_NONNULL mutable_bft_meta();
+  void set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  ::mini2::BftMetadata* PROTOBUF_NULLABLE unsafe_arena_release_bft_meta();
+
+  private:
+  const ::mini2::BftMetadata& _internal_bft_meta() const;
+  ::mini2::BftMetadata* PROTOBUF_NONNULL _internal_mutable_bft_meta();
+
+  public:
   // double aggregation_sum = 4;
   void clear_aggregation_sum() ;
   [[nodiscard]] double aggregation_sum() const;
@@ -1974,8 +2271,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 6,
-                                   1, 51,
+  static const ::google::protobuf::internal::TcParseTable<3, 7,
+                                   2, 51,
                                    2>
       _table_;
 
@@ -2001,6 +2298,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
     ::google::protobuf::RepeatedPtrField< ::mini2::TripRecordMsg > records_;
     ::google::protobuf::internal::ArenaStringPtr request_id_;
     ::google::protobuf::internal::ArenaStringPtr source_node_;
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE bft_meta_;
     double aggregation_sum_;
     double aggregation_avg_;
     ::int64_t aggregation_count_;
@@ -2399,6 +2697,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
   enum : int {
     kRecordsFieldNumber = 5,
     kRequestIdFieldNumber = 1,
+    kBftMetaFieldNumber = 10,
     kChunkIndexFieldNumber = 2,
     kTotalChunksFieldNumber = 3,
     kAggregationSumFieldNumber = 6,
@@ -2440,6 +2739,22 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
   const ::std::string& _internal_request_id() const;
   PROTOBUF_ALWAYS_INLINE void _internal_set_request_id(const ::std::string& value);
   ::std::string* PROTOBUF_NONNULL _internal_mutable_request_id();
+
+  public:
+  // .mini2.BftMetadata bft_meta = 10;
+  [[nodiscard]] bool has_bft_meta()
+      const;
+  void clear_bft_meta() ;
+  [[nodiscard]] const ::mini2::BftMetadata& bft_meta() const;
+  [[nodiscard]] ::mini2::BftMetadata* PROTOBUF_NULLABLE release_bft_meta();
+  ::mini2::BftMetadata* PROTOBUF_NONNULL mutable_bft_meta();
+  void set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  ::mini2::BftMetadata* PROTOBUF_NULLABLE unsafe_arena_release_bft_meta();
+
+  private:
+  const ::mini2::BftMetadata& _internal_bft_meta() const;
+  ::mini2::BftMetadata* PROTOBUF_NONNULL _internal_mutable_bft_meta();
 
   public:
   // int32 chunk_index = 2;
@@ -2516,8 +2831,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<4, 9,
-                                   1, 46,
+  static const ::google::protobuf::internal::TcParseTable<4, 10,
+                                   2, 46,
                                    2>
       _table_;
 
@@ -2542,6 +2857,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::RepeatedPtrField< ::mini2::TripRecordMsg > records_;
     ::google::protobuf::internal::ArenaStringPtr request_id_;
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE bft_meta_;
     ::int32_t chunk_index_;
     ::int32_t total_chunks_;
     double aggregation_sum_;
@@ -2710,6 +3026,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED QueryRequest final : public ::googl
     kNumericQueryFieldNumber = 4,
     kIntQueryFieldNumber = 5,
     kCombinedQueryFieldNumber = 6,
+    kBftMetaFieldNumber = 7,
   };
   // string request_id = 1;
   void clear_request_id() ;
@@ -2805,12 +3122,28 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED QueryRequest final : public ::googl
   ::mini2::CombinedQuery* PROTOBUF_NONNULL _internal_mutable_combined_query();
 
   public:
+  // .mini2.BftMetadata bft_meta = 7;
+  [[nodiscard]] bool has_bft_meta()
+      const;
+  void clear_bft_meta() ;
+  [[nodiscard]] const ::mini2::BftMetadata& bft_meta() const;
+  [[nodiscard]] ::mini2::BftMetadata* PROTOBUF_NULLABLE release_bft_meta();
+  ::mini2::BftMetadata* PROTOBUF_NONNULL mutable_bft_meta();
+  void set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  ::mini2::BftMetadata* PROTOBUF_NULLABLE unsafe_arena_release_bft_meta();
+
+  private:
+  const ::mini2::BftMetadata& _internal_bft_meta() const;
+  ::mini2::BftMetadata* PROTOBUF_NONNULL _internal_mutable_bft_meta();
+
+  public:
   // @@protoc_insertion_point(class_scope:mini2.QueryRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 6,
-                                   4, 47,
+  static const ::google::protobuf::internal::TcParseTable<3, 7,
+                                   5, 47,
                                    2>
       _table_;
 
@@ -2839,6 +3172,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED QueryRequest final : public ::googl
     ::mini2::NumericRangeQuery* PROTOBUF_NULLABLE numeric_query_;
     ::mini2::IntRangeQuery* PROTOBUF_NULLABLE int_query_;
     ::mini2::CombinedQuery* PROTOBUF_NULLABLE combined_query_;
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE bft_meta_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -2997,6 +3331,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardRequest final : public ::goo
     kRequestIdFieldNumber = 1,
     kOriginNodeFieldNumber = 2,
     kQueryFieldNumber = 3,
+    kBftMetaFieldNumber = 4,
   };
   // string request_id = 1;
   void clear_request_id() ;
@@ -3044,12 +3379,28 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardRequest final : public ::goo
   ::mini2::QueryRequest* PROTOBUF_NONNULL _internal_mutable_query();
 
   public:
+  // .mini2.BftMetadata bft_meta = 4;
+  [[nodiscard]] bool has_bft_meta()
+      const;
+  void clear_bft_meta() ;
+  [[nodiscard]] const ::mini2::BftMetadata& bft_meta() const;
+  [[nodiscard]] ::mini2::BftMetadata* PROTOBUF_NULLABLE release_bft_meta();
+  ::mini2::BftMetadata* PROTOBUF_NONNULL mutable_bft_meta();
+  void set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value);
+  ::mini2::BftMetadata* PROTOBUF_NULLABLE unsafe_arena_release_bft_meta();
+
+  private:
+  const ::mini2::BftMetadata& _internal_bft_meta() const;
+  ::mini2::BftMetadata* PROTOBUF_NONNULL _internal_mutable_bft_meta();
+
+  public:
   // @@protoc_insertion_point(class_scope:mini2.ForwardRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<2, 3,
-                                   1, 50,
+  static const ::google::protobuf::internal::TcParseTable<2, 4,
+                                   2, 50,
                                    2>
       _table_;
 
@@ -3075,6 +3426,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardRequest final : public ::goo
     ::google::protobuf::internal::ArenaStringPtr request_id_;
     ::google::protobuf::internal::ArenaStringPtr origin_node_;
     ::mini2::QueryRequest* PROTOBUF_NULLABLE query_;
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE bft_meta_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -4088,6 +4440,105 @@ inline void QueryRequest::set_allocated_combined_query(::mini2::CombinedQuery* P
   // @@protoc_insertion_point(field_set_allocated:mini2.QueryRequest.combined_query)
 }
 
+// .mini2.BftMetadata bft_meta = 7;
+inline bool QueryRequest::has_bft_meta() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000040U);
+  PROTOBUF_ASSUME(!value || _impl_.bft_meta_ != nullptr);
+  return value;
+}
+inline void QueryRequest::clear_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ != nullptr) _impl_.bft_meta_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000040U);
+}
+inline const ::mini2::BftMetadata& QueryRequest::_internal_bft_meta() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::mini2::BftMetadata* p = _impl_.bft_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::mini2::BftMetadata&>(::mini2::_BftMetadata_default_instance_);
+}
+inline const ::mini2::BftMetadata& QueryRequest::bft_meta() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.QueryRequest.bft_meta)
+  return _internal_bft_meta();
+}
+inline void QueryRequest::unsafe_arena_set_allocated_bft_meta(
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:mini2.QueryRequest.bft_meta)
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE QueryRequest::release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
+  ::mini2::BftMetadata* released = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE QueryRequest::unsafe_arena_release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.QueryRequest.bft_meta)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
+  ::mini2::BftMetadata* temp = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  return temp;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL QueryRequest::_internal_mutable_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::mini2::BftMetadata>(GetArena());
+    _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(p);
+  }
+  return _impl_.bft_meta_;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL QueryRequest::mutable_bft_meta()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  ::mini2::BftMetadata* _msg = _internal_mutable_bft_meta();
+  // @@protoc_insertion_point(field_mutable:mini2.QueryRequest.bft_meta)
+  return _msg;
+}
+inline void QueryRequest::set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
+  }
+
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  // @@protoc_insertion_point(field_set_allocated:mini2.QueryRequest.bft_meta)
+}
+
 // -------------------------------------------------------------------
 
 // TripRecordMsg
@@ -4591,7 +5042,7 @@ inline void ChunkResponse::clear_chunk_index() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.chunk_index_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000004U);
+                  0x00000008U);
 }
 inline ::int32_t ChunkResponse::chunk_index() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.chunk_index)
@@ -4599,7 +5050,7 @@ inline ::int32_t ChunkResponse::chunk_index() const {
 }
 inline void ChunkResponse::set_chunk_index(::int32_t value) {
   _internal_set_chunk_index(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.chunk_index)
 }
 inline ::int32_t ChunkResponse::_internal_chunk_index() const {
@@ -4616,7 +5067,7 @@ inline void ChunkResponse::clear_total_chunks() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.total_chunks_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000008U);
+                  0x00000010U);
 }
 inline ::int32_t ChunkResponse::total_chunks() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.total_chunks)
@@ -4624,7 +5075,7 @@ inline ::int32_t ChunkResponse::total_chunks() const {
 }
 inline void ChunkResponse::set_total_chunks(::int32_t value) {
   _internal_set_total_chunks(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.total_chunks)
 }
 inline ::int32_t ChunkResponse::_internal_total_chunks() const {
@@ -4641,7 +5092,7 @@ inline void ChunkResponse::clear_is_last() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.is_last_ = false;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000020U);
+                  0x00000040U);
 }
 inline bool ChunkResponse::is_last() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.is_last)
@@ -4649,7 +5100,7 @@ inline bool ChunkResponse::is_last() const {
 }
 inline void ChunkResponse::set_is_last(bool value) {
   _internal_set_is_last(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.is_last)
 }
 inline bool ChunkResponse::_internal_is_last() const {
@@ -4722,7 +5173,7 @@ inline void ChunkResponse::clear_aggregation_sum() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_sum_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000010U);
+                  0x00000020U);
 }
 inline double ChunkResponse::aggregation_sum() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.aggregation_sum)
@@ -4730,7 +5181,7 @@ inline double ChunkResponse::aggregation_sum() const {
 }
 inline void ChunkResponse::set_aggregation_sum(double value) {
   _internal_set_aggregation_sum(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.aggregation_sum)
 }
 inline double ChunkResponse::_internal_aggregation_sum() const {
@@ -4747,7 +5198,7 @@ inline void ChunkResponse::clear_aggregation_avg() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_avg_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000080U);
+                  0x00000100U);
 }
 inline double ChunkResponse::aggregation_avg() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.aggregation_avg)
@@ -4755,7 +5206,7 @@ inline double ChunkResponse::aggregation_avg() const {
 }
 inline void ChunkResponse::set_aggregation_avg(double value) {
   _internal_set_aggregation_avg(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.aggregation_avg)
 }
 inline double ChunkResponse::_internal_aggregation_avg() const {
@@ -4772,7 +5223,7 @@ inline void ChunkResponse::clear_aggregation_count() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_count_ = ::int64_t{0};
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000100U);
+                  0x00000200U);
 }
 inline ::int64_t ChunkResponse::aggregation_count() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.aggregation_count)
@@ -4780,7 +5231,7 @@ inline ::int64_t ChunkResponse::aggregation_count() const {
 }
 inline void ChunkResponse::set_aggregation_count(::int64_t value) {
   _internal_set_aggregation_count(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000200U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.aggregation_count)
 }
 inline ::int64_t ChunkResponse::_internal_aggregation_count() const {
@@ -4797,7 +5248,7 @@ inline void ChunkResponse::clear_effective_chunk_size() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.effective_chunk_size_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000040U);
+                  0x00000080U);
 }
 inline ::int32_t ChunkResponse::effective_chunk_size() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.effective_chunk_size)
@@ -4805,7 +5256,7 @@ inline ::int32_t ChunkResponse::effective_chunk_size() const {
 }
 inline void ChunkResponse::set_effective_chunk_size(::int32_t value) {
   _internal_set_effective_chunk_size(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.effective_chunk_size)
 }
 inline ::int32_t ChunkResponse::_internal_effective_chunk_size() const {
@@ -4815,6 +5266,105 @@ inline ::int32_t ChunkResponse::_internal_effective_chunk_size() const {
 inline void ChunkResponse::_internal_set_effective_chunk_size(::int32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.effective_chunk_size_ = value;
+}
+
+// .mini2.BftMetadata bft_meta = 10;
+inline bool ChunkResponse::has_bft_meta() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000004U);
+  PROTOBUF_ASSUME(!value || _impl_.bft_meta_ != nullptr);
+  return value;
+}
+inline void ChunkResponse::clear_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ != nullptr) _impl_.bft_meta_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000004U);
+}
+inline const ::mini2::BftMetadata& ChunkResponse::_internal_bft_meta() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::mini2::BftMetadata* p = _impl_.bft_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::mini2::BftMetadata&>(::mini2::_BftMetadata_default_instance_);
+}
+inline const ::mini2::BftMetadata& ChunkResponse::bft_meta() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.ChunkResponse.bft_meta)
+  return _internal_bft_meta();
+}
+inline void ChunkResponse::unsafe_arena_set_allocated_bft_meta(
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:mini2.ChunkResponse.bft_meta)
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ChunkResponse::release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::mini2::BftMetadata* released = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ChunkResponse::unsafe_arena_release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.ChunkResponse.bft_meta)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::mini2::BftMetadata* temp = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  return temp;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ChunkResponse::_internal_mutable_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::mini2::BftMetadata>(GetArena());
+    _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(p);
+  }
+  return _impl_.bft_meta_;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ChunkResponse::mutable_bft_meta()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::mini2::BftMetadata* _msg = _internal_mutable_bft_meta();
+  // @@protoc_insertion_point(field_mutable:mini2.ChunkResponse.bft_meta)
+  return _msg;
+}
+inline void ChunkResponse::set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  }
+
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  // @@protoc_insertion_point(field_set_allocated:mini2.ChunkResponse.bft_meta)
 }
 
 // -------------------------------------------------------------------
@@ -5144,6 +5694,105 @@ inline void ForwardRequest::set_allocated_query(::mini2::QueryRequest* PROTOBUF_
   // @@protoc_insertion_point(field_set_allocated:mini2.ForwardRequest.query)
 }
 
+// .mini2.BftMetadata bft_meta = 4;
+inline bool ForwardRequest::has_bft_meta() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000008U);
+  PROTOBUF_ASSUME(!value || _impl_.bft_meta_ != nullptr);
+  return value;
+}
+inline void ForwardRequest::clear_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ != nullptr) _impl_.bft_meta_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000008U);
+}
+inline const ::mini2::BftMetadata& ForwardRequest::_internal_bft_meta() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::mini2::BftMetadata* p = _impl_.bft_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::mini2::BftMetadata&>(::mini2::_BftMetadata_default_instance_);
+}
+inline const ::mini2::BftMetadata& ForwardRequest::bft_meta() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.ForwardRequest.bft_meta)
+  return _internal_bft_meta();
+}
+inline void ForwardRequest::unsafe_arena_set_allocated_bft_meta(
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:mini2.ForwardRequest.bft_meta)
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ForwardRequest::release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* released = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ForwardRequest::unsafe_arena_release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.ForwardRequest.bft_meta)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* temp = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  return temp;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ForwardRequest::_internal_mutable_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::mini2::BftMetadata>(GetArena());
+    _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(p);
+  }
+  return _impl_.bft_meta_;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ForwardRequest::mutable_bft_meta()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* _msg = _internal_mutable_bft_meta();
+  // @@protoc_insertion_point(field_mutable:mini2.ForwardRequest.bft_meta)
+  return _msg;
+}
+inline void ForwardRequest::set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  }
+
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  // @@protoc_insertion_point(field_set_allocated:mini2.ForwardRequest.bft_meta)
+}
+
 // -------------------------------------------------------------------
 
 // ForwardResponse
@@ -5339,7 +5988,7 @@ inline void ForwardResponse::clear_aggregation_sum() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_sum_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000008U);
+                  0x00000010U);
 }
 inline double ForwardResponse::aggregation_sum() const {
   // @@protoc_insertion_point(field_get:mini2.ForwardResponse.aggregation_sum)
@@ -5347,7 +5996,7 @@ inline double ForwardResponse::aggregation_sum() const {
 }
 inline void ForwardResponse::set_aggregation_sum(double value) {
   _internal_set_aggregation_sum(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
   // @@protoc_insertion_point(field_set:mini2.ForwardResponse.aggregation_sum)
 }
 inline double ForwardResponse::_internal_aggregation_sum() const {
@@ -5364,7 +6013,7 @@ inline void ForwardResponse::clear_aggregation_avg() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_avg_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000010U);
+                  0x00000020U);
 }
 inline double ForwardResponse::aggregation_avg() const {
   // @@protoc_insertion_point(field_get:mini2.ForwardResponse.aggregation_avg)
@@ -5372,7 +6021,7 @@ inline double ForwardResponse::aggregation_avg() const {
 }
 inline void ForwardResponse::set_aggregation_avg(double value) {
   _internal_set_aggregation_avg(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
   // @@protoc_insertion_point(field_set:mini2.ForwardResponse.aggregation_avg)
 }
 inline double ForwardResponse::_internal_aggregation_avg() const {
@@ -5389,7 +6038,7 @@ inline void ForwardResponse::clear_aggregation_count() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_count_ = ::int64_t{0};
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000020U);
+                  0x00000040U);
 }
 inline ::int64_t ForwardResponse::aggregation_count() const {
   // @@protoc_insertion_point(field_get:mini2.ForwardResponse.aggregation_count)
@@ -5397,7 +6046,7 @@ inline ::int64_t ForwardResponse::aggregation_count() const {
 }
 inline void ForwardResponse::set_aggregation_count(::int64_t value) {
   _internal_set_aggregation_count(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
   // @@protoc_insertion_point(field_set:mini2.ForwardResponse.aggregation_count)
 }
 inline ::int64_t ForwardResponse::_internal_aggregation_count() const {
@@ -5407,6 +6056,419 @@ inline ::int64_t ForwardResponse::_internal_aggregation_count() const {
 inline void ForwardResponse::_internal_set_aggregation_count(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_count_ = value;
+}
+
+// .mini2.BftMetadata bft_meta = 7;
+inline bool ForwardResponse::has_bft_meta() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000008U);
+  PROTOBUF_ASSUME(!value || _impl_.bft_meta_ != nullptr);
+  return value;
+}
+inline void ForwardResponse::clear_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ != nullptr) _impl_.bft_meta_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000008U);
+}
+inline const ::mini2::BftMetadata& ForwardResponse::_internal_bft_meta() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::mini2::BftMetadata* p = _impl_.bft_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::mini2::BftMetadata&>(::mini2::_BftMetadata_default_instance_);
+}
+inline const ::mini2::BftMetadata& ForwardResponse::bft_meta() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.ForwardResponse.bft_meta)
+  return _internal_bft_meta();
+}
+inline void ForwardResponse::unsafe_arena_set_allocated_bft_meta(
+    ::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:mini2.ForwardResponse.bft_meta)
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ForwardResponse::release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* released = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NULLABLE ForwardResponse::unsafe_arena_release_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.ForwardResponse.bft_meta)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* temp = _impl_.bft_meta_;
+  _impl_.bft_meta_ = nullptr;
+  return temp;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ForwardResponse::_internal_mutable_bft_meta() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.bft_meta_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::mini2::BftMetadata>(GetArena());
+    _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(p);
+  }
+  return _impl_.bft_meta_;
+}
+inline ::mini2::BftMetadata* PROTOBUF_NONNULL ForwardResponse::mutable_bft_meta()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::mini2::BftMetadata* _msg = _internal_mutable_bft_meta();
+  // @@protoc_insertion_point(field_mutable:mini2.ForwardResponse.bft_meta)
+  return _msg;
+}
+inline void ForwardResponse::set_allocated_bft_meta(::mini2::BftMetadata* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.bft_meta_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  }
+
+  _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
+  // @@protoc_insertion_point(field_set_allocated:mini2.ForwardResponse.bft_meta)
+}
+
+// -------------------------------------------------------------------
+
+// BftMetadata
+
+// string node_id = 1;
+inline void BftMetadata::clear_node_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.node_id_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000001U);
+}
+inline const ::std::string& BftMetadata::node_id() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.node_id)
+  return _internal_node_id();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void BftMetadata::set_node_id(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  _impl_.node_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.node_id)
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::mutable_node_id()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  ::std::string* _s = _internal_mutable_node_id();
+  // @@protoc_insertion_point(field_mutable:mini2.BftMetadata.node_id)
+  return _s;
+}
+inline const ::std::string& BftMetadata::_internal_node_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.node_id_.Get();
+}
+inline void BftMetadata::_internal_set_node_id(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.node_id_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::_internal_mutable_node_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.node_id_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE BftMetadata::release_node_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.BftMetadata.node_id)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000001U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  auto* released = _impl_.node_id_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.node_id_.Set("", GetArena());
+  }
+  return released;
+}
+inline void BftMetadata::set_allocated_node_id(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  }
+  _impl_.node_id_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.node_id_.IsDefault()) {
+    _impl_.node_id_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:mini2.BftMetadata.node_id)
+}
+
+// string payload_hash = 2;
+inline void BftMetadata::clear_payload_hash() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.payload_hash_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline const ::std::string& BftMetadata::payload_hash() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.payload_hash)
+  return _internal_payload_hash();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void BftMetadata::set_payload_hash(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  _impl_.payload_hash_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.payload_hash)
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::mutable_payload_hash()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::std::string* _s = _internal_mutable_payload_hash();
+  // @@protoc_insertion_point(field_mutable:mini2.BftMetadata.payload_hash)
+  return _s;
+}
+inline const ::std::string& BftMetadata::_internal_payload_hash() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.payload_hash_.Get();
+}
+inline void BftMetadata::_internal_set_payload_hash(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.payload_hash_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::_internal_mutable_payload_hash() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.payload_hash_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE BftMetadata::release_payload_hash() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.BftMetadata.payload_hash)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000002U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  auto* released = _impl_.payload_hash_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.payload_hash_.Set("", GetArena());
+  }
+  return released;
+}
+inline void BftMetadata::set_allocated_payload_hash(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  }
+  _impl_.payload_hash_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.payload_hash_.IsDefault()) {
+    _impl_.payload_hash_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:mini2.BftMetadata.payload_hash)
+}
+
+// string auth_tag = 3;
+inline void BftMetadata::clear_auth_tag() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.auth_tag_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000004U);
+}
+inline const ::std::string& BftMetadata::auth_tag() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.auth_tag)
+  return _internal_auth_tag();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void BftMetadata::set_auth_tag(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  _impl_.auth_tag_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.auth_tag)
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::mutable_auth_tag()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::std::string* _s = _internal_mutable_auth_tag();
+  // @@protoc_insertion_point(field_mutable:mini2.BftMetadata.auth_tag)
+  return _s;
+}
+inline const ::std::string& BftMetadata::_internal_auth_tag() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.auth_tag_.Get();
+}
+inline void BftMetadata::_internal_set_auth_tag(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.auth_tag_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::_internal_mutable_auth_tag() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.auth_tag_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE BftMetadata::release_auth_tag() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.BftMetadata.auth_tag)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000004U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  auto* released = _impl_.auth_tag_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.auth_tag_.Set("", GetArena());
+  }
+  return released;
+}
+inline void BftMetadata::set_allocated_auth_tag(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  }
+  _impl_.auth_tag_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.auth_tag_.IsDefault()) {
+    _impl_.auth_tag_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:mini2.BftMetadata.auth_tag)
+}
+
+// uint64 nonce = 4;
+inline void BftMetadata::clear_nonce() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nonce_ = ::uint64_t{0u};
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000010U);
+}
+inline ::uint64_t BftMetadata::nonce() const {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.nonce)
+  return _internal_nonce();
+}
+inline void BftMetadata::set_nonce(::uint64_t value) {
+  _internal_set_nonce(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.nonce)
+}
+inline ::uint64_t BftMetadata::_internal_nonce() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.nonce_;
+}
+inline void BftMetadata::_internal_set_nonce(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nonce_ = value;
+}
+
+// int64 timestamp_ms = 5;
+inline void BftMetadata::clear_timestamp_ms() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.timestamp_ms_ = ::int64_t{0};
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000020U);
+}
+inline ::int64_t BftMetadata::timestamp_ms() const {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.timestamp_ms)
+  return _internal_timestamp_ms();
+}
+inline void BftMetadata::set_timestamp_ms(::int64_t value) {
+  _internal_set_timestamp_ms(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.timestamp_ms)
+}
+inline ::int64_t BftMetadata::_internal_timestamp_ms() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.timestamp_ms_;
+}
+inline void BftMetadata::_internal_set_timestamp_ms(::int64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.timestamp_ms_ = value;
+}
+
+// string algorithm = 6;
+inline void BftMetadata::clear_algorithm() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.algorithm_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000008U);
+}
+inline const ::std::string& BftMetadata::algorithm() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:mini2.BftMetadata.algorithm)
+  return _internal_algorithm();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void BftMetadata::set_algorithm(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  _impl_.algorithm_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:mini2.BftMetadata.algorithm)
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::mutable_algorithm()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ::std::string* _s = _internal_mutable_algorithm();
+  // @@protoc_insertion_point(field_mutable:mini2.BftMetadata.algorithm)
+  return _s;
+}
+inline const ::std::string& BftMetadata::_internal_algorithm() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.algorithm_.Get();
+}
+inline void BftMetadata::_internal_set_algorithm(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.algorithm_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL BftMetadata::_internal_mutable_algorithm() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.algorithm_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE BftMetadata::release_algorithm() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:mini2.BftMetadata.algorithm)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000008U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  auto* released = _impl_.algorithm_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.algorithm_.Set("", GetArena());
+  }
+  return released;
+}
+inline void BftMetadata::set_allocated_algorithm(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  }
+  _impl_.algorithm_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.algorithm_.IsDefault()) {
+    _impl_.algorithm_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:mini2.BftMetadata.algorithm)
 }
 
 // -------------------------------------------------------------------

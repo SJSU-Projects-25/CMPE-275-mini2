@@ -30,6 +30,7 @@ message QueryRequest {
   NumericRangeQuery numeric_query = 4;
   IntRangeQuery int_query = 5;
   CombinedQuery combined_query = 6;
+  BftMetadata bft_meta = 7;
 }
 
 message TripRecordMsg {
@@ -63,6 +64,7 @@ message ChunkResponse {
   int64 aggregation_count = 8;
   // Records per chunk used when this response was framed (dynamic sizing at entry).
   int32 effective_chunk_size = 9;
+  BftMetadata bft_meta = 10;
 }
 
 message ChunkRequest {
@@ -74,6 +76,7 @@ message ForwardRequest {
   string request_id = 1;
   string origin_node = 2;
   QueryRequest query = 3;
+  BftMetadata bft_meta = 4;
 }
 
 message ForwardResponse {
@@ -83,6 +86,16 @@ message ForwardResponse {
   double aggregation_sum = 4;
   double aggregation_avg = 5;
   int64 aggregation_count = 6;
+  BftMetadata bft_meta = 7;
+}
+
+message BftMetadata {
+  string node_id = 1;
+  string payload_hash = 2;
+  string auth_tag = 3;
+  uint64 nonce = 4;
+  int64 timestamp_ms = 5;
+  string algorithm = 6;
 }
 
 message CancelRequest {

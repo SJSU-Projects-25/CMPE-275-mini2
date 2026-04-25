@@ -99,5 +99,52 @@
   "chunk_size": 500,
   "max_concurrent_requests": 5,
   "chunk_timeout_seconds": 30,
-  "stream_up": true
+  "stream_up": true,
+  "bft_mode": "off",
+  "bft": {
+    "fault_threshold": 1,
+    "replica_groups": {
+      "A": [
+        "A"
+      ],
+      "B": [
+        "B"
+      ],
+      "C": [
+        "C"
+      ],
+      "D": [
+        "D"
+      ],
+      "E": [
+        "E"
+      ],
+      "F": [
+        "F"
+      ],
+      "G": [
+        "G"
+      ],
+      "H": [
+        "H"
+      ],
+      "I": [
+        "I"
+      ]
+    },
+    "auth": {
+      "type": "hmac-sha256",
+      "keys": {
+        "A": "dev-bft-key-A",
+        "B": "dev-bft-key-B",
+        "C": "dev-bft-key-C",
+        "D": "dev-bft-key-D",
+        "E": "dev-bft-key-E",
+        "F": "dev-bft-key-F",
+        "G": "dev-bft-key-G",
+        "H": "dev-bft-key-H",
+        "I": "dev-bft-key-I"
+      }
+    }
+  }
 }
