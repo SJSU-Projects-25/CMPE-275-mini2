@@ -24,7 +24,7 @@ from trip_record import TripRecord
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Mini2 Python node runtime (Step 3)")
+    parser = argparse.ArgumentParser(description="Mini2 Python node runtime")
     parser.add_argument("--id", required=True, help="Node identifier, e.g. B")
     parser.add_argument(
         "--config",
@@ -375,14 +375,12 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         self, request: mini2_pb2.ChunkRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.ChunkResponse:
         rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        rpc_context.set_details("FetchChunk is implemented in later steps.")
         return mini2_pb2.ChunkResponse()
 
     def CancelQuery(
         self, request: mini2_pb2.CancelRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.CancelResponse:
         rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        rpc_context.set_details("CancelQuery is implemented in later steps.")
         return mini2_pb2.CancelResponse(acknowledged=False)
 
 

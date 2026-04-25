@@ -118,17 +118,17 @@ Outputs:
 
 ## Smoke Test
 
+**Full tree:** Python nodes B–I, C++ entry A, one client query, then teardown.
+
+Requires `.venv` with `requirements.txt` installed and C++ binaries built.
+
 ```bash
-./cpp/build/node_server
-./cpp/build/client
+bash scripts/launch_all.sh
+# optional: bash scripts/launch_all.sh --build
+# optional: bash scripts/launch_all.sh -- --config config/topology.json --query-type aggregate
 ```
 
-Expected:
-
-```
-Mini2 node server placeholder
-Mini2 client placeholder
-```
+**Manual (two terminals):** start Python workers (`bash scripts/launch_python_nodes.sh`), then `./cpp/build/node_server --id A`, then `./cpp/build/client --config config/topology.json --query-type distance --min 0 --max 10000`. Stop workers with `bash scripts/stop_python_nodes.sh`.
 
 ## One-Command Foundation Demo
 
