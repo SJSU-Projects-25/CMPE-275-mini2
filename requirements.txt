@@ -1,0 +1,4 @@
+# Stubs in python/mini2_pb2.py are generated for protobuf 6.31.1+ (see file header).
+protobuf>=6.31.1
+grpcio>=1.60.0
+grpcio-tools>=1.60.0

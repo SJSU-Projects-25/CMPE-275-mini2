@@ -12,3 +12,6 @@ build/
 # OS/editor
 .DS_Store
 .vscode/
+
+# Local node logs / launcher pid file (scripts/launch_python_nodes.sh)
+logs/
