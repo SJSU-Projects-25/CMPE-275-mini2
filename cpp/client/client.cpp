@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 #include <grpcpp/grpcpp.h>
 #include <nlohmann/json.hpp>
@@ -177,10 +178,11 @@ int main(int argc, char** argv) {
 
         const std::string& rid = first.request_id();
         std::int64_t total_records = static_cast<std::int64_t>(first.records_size());
-        const std::int32_t total_chunks = first.total_chunks();
+        std::int32_t total_chunks = first.total_chunks();
 
         if (!first.is_last()) {
-            for (std::int32_t idx = 1; idx < total_chunks; ++idx) {
+            std::int32_t idx = 1;
+            while (true) {
                 mini2::ChunkRequest chunk_req;
                 chunk_req.set_request_id(rid);
                 chunk_req.set_chunk_index(idx);
@@ -190,16 +192,26 @@ int main(int argc, char** argv) {
                 fetch_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(120));
                 const grpc::Status fetch_status = stub->FetchChunk(&fetch_ctx, chunk_req, &chunk);
                 if (!fetch_status.ok()) {
+                    if (fetch_status.error_code() == grpc::StatusCode::UNAVAILABLE) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        continue;
+                    }
                     std::cerr << "FetchChunk failed at index " << idx << ": "
                               << fetch_status.error_message() << '\n';
                     return 1;
                 }
+
                 total_records += static_cast<std::int64_t>(chunk.records_size());
-                const bool expect_last = idx == total_chunks - 1;
-                if (chunk.is_last() != expect_last) {
-                    std::cerr << "Unexpected is_last at chunk " << idx << '\n';
-                    return 1;
+                if (chunk.total_chunks() > 0) {
+                    total_chunks = chunk.total_chunks();
                 }
+                if (chunk.is_last()) {
+                    break;
+                }
+                ++idx;
+            }
+            if (total_chunks <= 0) {
+                total_chunks = idx + 1;
             }
         }
 

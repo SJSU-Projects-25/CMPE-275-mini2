@@ -1,22 +1,103 @@
 {
   "topology": "tree",
-  "edges": ["AB", "BC", "BD", "BE", "EF", "ED", "EG", "AH", "AG", "AI"],
+  "edges": [
+    "AB",
+    "BC",
+    "BD",
+    "BE",
+    "EF",
+    "ED",
+    "EG",
+    "AH",
+    "AG",
+    "AI"
+  ],
   "teams": {
-    "blue": { "nodes": ["A", "B", "D", "H"] },
-    "yellow": { "nodes": ["C", "E", "F", "G", "I"] }
+    "blue": {
+      "nodes": [
+        "A",
+        "B",
+        "D",
+        "H"
+      ]
+    },
+    "yellow": {
+      "nodes": [
+        "C",
+        "E",
+        "F",
+        "G",
+        "I"
+      ]
+    }
   },
   "nodes": {
-    "A": { "host": "0.0.0.0", "port": 50051, "lang": "cpp", "is_entry": true, "data": "data/partition_A.csv" },
-    "B": { "host": "0.0.0.0", "port": 50052, "lang": "python", "is_entry": false, "data": "data/partition_B.csv" },
-    "C": { "host": "0.0.0.0", "port": 50053, "lang": "python", "is_entry": false, "data": "data/partition_C.csv" },
-    "D": { "host": "0.0.0.0", "port": 50054, "lang": "python", "is_entry": false, "data": "data/partition_D.csv" },
-    "E": { "host": "0.0.0.0", "port": 50055, "lang": "python", "is_entry": false, "data": "data/partition_E.csv" },
-    "F": { "host": "0.0.0.0", "port": 50056, "lang": "python", "is_entry": false, "data": "data/partition_F.csv" },
-    "G": { "host": "0.0.0.0", "port": 50057, "lang": "python", "is_entry": false, "data": "data/partition_G.csv" },
-    "H": { "host": "0.0.0.0", "port": 50058, "lang": "python", "is_entry": false, "data": "data/partition_H.csv" },
-    "I": { "host": "0.0.0.0", "port": 50059, "lang": "python", "is_entry": false, "data": "data/partition_I.csv" }
+    "A": {
+      "host": "0.0.0.0",
+      "port": 50051,
+      "lang": "cpp",
+      "is_entry": true,
+      "data": "data/partition_A.csv"
+    },
+    "B": {
+      "host": "0.0.0.0",
+      "port": 50052,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_B.csv"
+    },
+    "C": {
+      "host": "0.0.0.0",
+      "port": 50053,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_C.csv"
+    },
+    "D": {
+      "host": "0.0.0.0",
+      "port": 50054,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_D.csv"
+    },
+    "E": {
+      "host": "0.0.0.0",
+      "port": 50055,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_E.csv"
+    },
+    "F": {
+      "host": "0.0.0.0",
+      "port": 50056,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_F.csv"
+    },
+    "G": {
+      "host": "0.0.0.0",
+      "port": 50057,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_G.csv"
+    },
+    "H": {
+      "host": "0.0.0.0",
+      "port": 50058,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_H.csv"
+    },
+    "I": {
+      "host": "0.0.0.0",
+      "port": 50059,
+      "lang": "python",
+      "is_entry": false,
+      "data": "data/partition_I.csv"
+    }
   },
   "chunk_size": 500,
   "max_concurrent_requests": 5,
-  "chunk_timeout_seconds": 30
+  "chunk_timeout_seconds": 30,
+  "stream_up": true
 }

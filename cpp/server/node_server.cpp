@@ -14,6 +14,7 @@
 #include <queue>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -36,6 +37,7 @@ struct NodeRuntime {
     std::string host;
     int port = 0;
     int chunk_size = 500;
+    bool stream_up = false;
     std::filesystem::path data_path;
     std::vector<std::string> children;
     std::unordered_map<std::string, std::string> endpoints;
@@ -180,6 +182,7 @@ NodeRuntime load_runtime(const CliOptions& cli) {
             runtime.chunk_size = 500;
         }
     }
+    runtime.stream_up = config.value("stream_up", false);
     for (auto it = nodes.begin(); it != nodes.end(); ++it) {
         runtime.endpoints[it.key()] =
             it.value().at("host").get<std::string>() + ":" +
@@ -300,8 +303,10 @@ struct ChunkCacheEntry {
     double aggregation_sum = 0.0;
     double aggregation_avg = 0.0;
     std::int64_t aggregation_count = 0;
+    bool finalized = false;
     // Chunk indices 1 .. total_chunks-1 (chunk 0 is returned only from SubmitQuery).
     std::vector<std::vector<mini2::TripRecordMsg>> chunks_after_first;
+    std::vector<mini2::TripRecordMsg> stream_records_after_first;
 };
 
 class NodeServiceImpl final : public mini2::NodeService::Service {
@@ -388,6 +393,132 @@ public:
             }));
         }
 
+        if (runtime_.stream_up) {
+            const int chunk_sz = dynamic_chunk_size_.load(std::memory_order_relaxed);
+            const int local_total_records = static_cast<int>(merged_records.size());
+            const int first_end = std::min(chunk_sz, local_total_records);
+
+            response->set_request_id(request_id);
+            response->set_chunk_index(0);
+            response->set_total_chunks(0);
+            response->set_is_last(futures.empty() && local_total_records <= chunk_sz);
+            response->set_aggregation_sum(local_result.aggregation_sum);
+            response->set_aggregation_count(local_result.aggregation_count);
+            response->set_aggregation_avg(local_result.aggregation_avg);
+            response->set_effective_chunk_size(chunk_sz);
+            for (int i = 0; i < first_end; ++i) {
+                *response->add_records() = merged_records[static_cast<std::size_t>(i)];
+            }
+
+            if (!response->is_last()) {
+                ChunkCacheEntry entry;
+                entry.records_per_chunk = chunk_sz;
+                entry.aggregation_sum = local_result.aggregation_sum;
+                entry.aggregation_avg = local_result.aggregation_avg;
+                entry.aggregation_count = local_result.aggregation_count;
+                entry.finalized = futures.empty();
+                for (int i = first_end; i < local_total_records; ++i) {
+                    entry.stream_records_after_first.push_back(
+                        merged_records[static_cast<std::size_t>(i)]);
+                }
+                if (entry.finalized) {
+                    rebuild_chunk_views(entry);
+                    entry.total_chunks =
+                        1 + static_cast<std::int32_t>(entry.chunks_after_first.size());
+                }
+                std::lock_guard<std::mutex> lock(state_mutex_);
+                if (!cancel_flag->load(std::memory_order_acquire)) {
+                    chunk_cache_[request_id] = std::move(entry);
+                }
+            }
+
+            double first_chunk_fare_sum = 0.0;
+            for (int i = 0; i < first_end; ++i) {
+                first_chunk_fare_sum += merged_records[static_cast<std::size_t>(i)].fare_amount();
+            }
+
+            if (!futures.empty()) {
+                std::thread([this, request_id, cancel_flag, query_type = effective_request.query_type(),
+                             first_chunk_count = static_cast<std::int64_t>(first_end),
+                             first_chunk_fare_sum,
+                             futures = std::move(futures)]() mutable {
+                    std::vector<mini2::TripRecordMsg> child_records;
+                    double child_agg_sum = 0.0;
+                    std::int64_t child_agg_count = 0;
+
+                    for (auto& future : futures) {
+                        if (cancel_flag->load(std::memory_order_acquire)) {
+                            return;
+                        }
+                        ChildCallResult child_result = future.get();
+                        if (!child_result.status.ok()) {
+                            std::cout << "[A] request_id=" << request_id
+                                      << " child=" << child_result.child_id
+                                      << " forward failed: "
+                                      << child_result.status.error_message() << '\n';
+                            continue;
+                        }
+                        if (child_result.response.request_id() != request_id) {
+                            std::cout << "[A] request_id=" << request_id
+                                      << " child=" << child_result.child_id
+                                      << " returned mismatched request_id="
+                                      << child_result.response.request_id() << '\n';
+                            continue;
+                        }
+                        child_agg_sum += child_result.response.aggregation_sum();
+                        child_agg_count += child_result.response.aggregation_count();
+                        for (const auto& record : child_result.response.records()) {
+                            child_records.push_back(record);
+                        }
+                    }
+
+                    std::lock_guard<std::mutex> lock(state_mutex_);
+                    if (canceled_ids_.count(request_id) != 0) {
+                        return;
+                    }
+                    auto cache_it = chunk_cache_.find(request_id);
+                    if (cache_it == chunk_cache_.end()) {
+                        return;
+                    }
+                    auto& entry = cache_it->second;
+                    entry.aggregation_sum += child_agg_sum;
+                    entry.aggregation_count += child_agg_count;
+                    for (const auto& record : child_records) {
+                        entry.stream_records_after_first.push_back(record);
+                    }
+                    if (query_type != "aggregate") {
+                        entry.aggregation_count =
+                            first_chunk_count + static_cast<std::int64_t>(entry.stream_records_after_first.size());
+                        double sum = first_chunk_fare_sum;
+                        for (const auto& rec : entry.stream_records_after_first) {
+                            sum += rec.fare_amount();
+                        }
+                        entry.aggregation_sum = sum;
+                    }
+                    entry.aggregation_avg = entry.aggregation_count == 0
+                        ? 0.0
+                        : entry.aggregation_sum / static_cast<double>(entry.aggregation_count);
+                    rebuild_chunk_views(entry);
+                    entry.finalized = true;
+                    entry.total_chunks =
+                        1 + static_cast<std::int32_t>(entry.chunks_after_first.size());
+                    std::cout << "[A] request_id=" << request_id
+                              << " stream-up finalized total_chunks=" << entry.total_chunks
+                              << '\n';
+                    active_cancel_.erase(request_id);
+                }).detach();
+            } else {
+                std::lock_guard<std::mutex> lock(state_mutex_);
+                active_cancel_.erase(request_id);
+                canceled_ids_.erase(request_id);
+            }
+
+            const double submit_serve_ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - serve_t0).count();
+            tune_after_chunk_served(submit_serve_ms);
+            return ::grpc::Status::OK;
+        }
+
         std::cout << "[A] request_id=" << request_id << " fan-out children=" << runtime_.children.size() << '\n';
         for (auto& future : futures) {
             if (cancel_flag->load(std::memory_order_acquire)) {
@@ -465,6 +596,7 @@ public:
             entry.aggregation_sum = merged_sum;
             entry.aggregation_avg = merged_avg;
             entry.aggregation_count = merged_count;
+            entry.finalized = true;
             entry.chunks_after_first.reserve(static_cast<std::size_t>(total_chunks - 1));
             for (std::int32_t c = 1; c < total_chunks; ++c) {
                 const int start = static_cast<int>(c) * chunk_sz;
@@ -518,13 +650,13 @@ public:
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "unknown request_id or chunk");
         }
         const auto& entry = it->second;
-        if (idx <= 0 || idx >= entry.total_chunks) {
+        if (idx <= 0) {
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "invalid chunk_index");
         }
 
         response->set_request_id(rid);
         response->set_chunk_index(idx);
-        response->set_total_chunks(entry.total_chunks);
+        response->set_total_chunks(entry.finalized ? entry.total_chunks : 0);
         response->set_aggregation_sum(entry.aggregation_sum);
         response->set_aggregation_avg(entry.aggregation_avg);
         response->set_aggregation_count(entry.aggregation_count);
@@ -532,12 +664,15 @@ public:
 
         const std::size_t slot = static_cast<std::size_t>(idx - 1);
         if (slot >= entry.chunks_after_first.size()) {
+            if (!entry.finalized) {
+                return ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "chunk not ready yet, retry");
+            }
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "invalid chunk_index");
         }
         for (const auto& rec : entry.chunks_after_first[slot]) {
             *response->add_records() = rec;
         }
-        const bool is_last = idx == entry.total_chunks - 1;
+        const bool is_last = entry.finalized && idx == entry.total_chunks - 1;
         response->set_is_last(is_last);
         if (is_last) {
             chunk_cache_.erase(rid);
@@ -570,6 +705,22 @@ public:
     }
 
 private:
+    static void rebuild_chunk_views(ChunkCacheEntry& entry)
+    {
+        entry.chunks_after_first.clear();
+        const int chunk_sz = std::max(1, entry.records_per_chunk);
+        for (std::size_t pos = 0; pos < entry.stream_records_after_first.size(); pos += chunk_sz) {
+            const std::size_t end = std::min(
+                pos + static_cast<std::size_t>(chunk_sz), entry.stream_records_after_first.size());
+            std::vector<mini2::TripRecordMsg> chunk;
+            chunk.reserve(end - pos);
+            for (std::size_t i = pos; i < end; ++i) {
+                chunk.push_back(entry.stream_records_after_first[i]);
+            }
+            entry.chunks_after_first.push_back(std::move(chunk));
+        }
+    }
+
     void tune_after_chunk_served(double serve_ms)
     {
         int cur = dynamic_chunk_size_.load(std::memory_order_relaxed);
@@ -628,6 +779,7 @@ int main(int argc, char** argv) {
         std::cout << "  data_file: " << runtime.data_path.string() << '\n';
         std::cout << "  loaded_rows: " << runtime.records.size() << '\n';
         std::cout << "  chunk_size: " << runtime.chunk_size << '\n';
+        std::cout << "  stream_up: " << (runtime.stream_up ? "true" : "false") << '\n';
         std::cout << "  children: ";
         if (runtime.children.empty()) {
             std::cout << "(none)\n";
