@@ -8,10 +8,12 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <mutex>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -38,6 +40,11 @@ struct NodeRuntime {
     int port = 0;
     int chunk_size = 500;
     bool stream_up = false;
+    bool bft_lite = false;
+    int bft_fault_threshold = 1;
+    std::string bft_auth_type = "off";
+    std::unordered_map<std::string, std::vector<std::string>> bft_replica_groups;
+    std::unordered_map<std::string, std::string> bft_keys;
     std::filesystem::path data_path;
     std::vector<std::string> children;
     std::unordered_map<std::string, std::string> endpoints;
@@ -52,9 +59,16 @@ struct LocalQueryResult {
 };
 
 struct ChildCallResult {
-    std::string child_id;
+    std::string logical_child_id;
+    std::string replica_id;
     ::grpc::Status status;
     mini2::ForwardResponse response;
+};
+
+struct ChildMergeResult {
+    std::vector<mini2::TripRecordMsg> records;
+    double aggregation_sum = 0.0;
+    std::int64_t aggregation_count = 0;
 };
 
 CliOptions parse_cli(int argc, char** argv) {
@@ -183,6 +197,41 @@ NodeRuntime load_runtime(const CliOptions& cli) {
         }
     }
     runtime.stream_up = config.value("stream_up", false);
+    const std::string bft_mode = config.value("bft_mode", std::string("off"));
+    runtime.bft_lite = bft_mode == "lite";
+    if (config.contains("bft") && config.at("bft").is_object()) {
+        const auto& bft_cfg = config.at("bft");
+        if (bft_cfg.contains("fault_threshold") && bft_cfg.at("fault_threshold").is_number_integer()) {
+            runtime.bft_fault_threshold = std::max(0, bft_cfg.at("fault_threshold").get<int>());
+        }
+        if (bft_cfg.contains("replica_groups") && bft_cfg.at("replica_groups").is_object()) {
+            for (auto it = bft_cfg.at("replica_groups").begin(); it != bft_cfg.at("replica_groups").end(); ++it) {
+                if (!it.value().is_array()) {
+                    continue;
+                }
+                std::vector<std::string> replicas;
+                for (const auto& node_json : it.value()) {
+                    if (node_json.is_string()) {
+                        replicas.push_back(node_json.get<std::string>());
+                    }
+                }
+                if (!replicas.empty()) {
+                    runtime.bft_replica_groups[it.key()] = std::move(replicas);
+                }
+            }
+        }
+        if (bft_cfg.contains("auth") && bft_cfg.at("auth").is_object()) {
+            const auto& auth_cfg = bft_cfg.at("auth");
+            runtime.bft_auth_type = auth_cfg.value("type", std::string("off"));
+            if (auth_cfg.contains("keys") && auth_cfg.at("keys").is_object()) {
+                for (auto it = auth_cfg.at("keys").begin(); it != auth_cfg.at("keys").end(); ++it) {
+                    if (it.value().is_string()) {
+                        runtime.bft_keys[it.key()] = it.value().get<std::string>();
+                    }
+                }
+            }
+        }
+    }
     for (auto it = nodes.begin(); it != nodes.end(); ++it) {
         runtime.endpoints[it.key()] =
             it.value().at("host").get<std::string>() + ":" +
@@ -218,6 +267,59 @@ std::string make_request_id() {
     const auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     return "cpp-" + std::to_string(now_ms) + "-" + std::to_string(seq.fetch_add(1));
+}
+
+std::string fnv1a64_hex(const std::string& payload)
+{
+    std::uint64_t hash = 1469598103934665603ull;
+    for (unsigned char c : payload) {
+        hash ^= static_cast<std::uint64_t>(c);
+        hash *= 1099511628211ull;
+    }
+    std::ostringstream out;
+    out << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return out.str();
+}
+
+std::string build_forward_payload_hash(const mini2::ForwardResponse& response)
+{
+    std::ostringstream payload;
+    payload << response.request_id() << '|'
+            << response.source_node() << '|'
+            << response.aggregation_sum() << '|'
+            << response.aggregation_avg() << '|'
+            << response.aggregation_count() << '|'
+            << response.records_size();
+    for (const auto& rec : response.records()) {
+        payload << '|'
+                << rec.vendor_id() << ','
+                << rec.pickup_timestamp() << ','
+                << rec.dropoff_timestamp() << ','
+                << rec.passenger_count() << ','
+                << rec.trip_distance() << ','
+                << rec.rate_code_id() << ','
+                << rec.store_and_fwd_flag() << ','
+                << rec.pu_location_id() << ','
+                << rec.do_location_id() << ','
+                << rec.payment_type() << ','
+                << rec.fare_amount() << ','
+                << rec.extra() << ','
+                << rec.mta_tax() << ','
+                << rec.tip_amount() << ','
+                << rec.tolls_amount() << ','
+                << rec.improvement_surcharge() << ','
+                << rec.total_amount();
+    }
+    return fnv1a64_hex(payload.str());
+}
+
+std::string build_auth_tag(
+    const std::string& node_id,
+    const std::string& request_id,
+    const std::string& payload_hash,
+    const std::string& shared_key)
+{
+    return fnv1a64_hex(node_id + "|" + request_id + "|" + payload_hash + "|" + shared_key);
 }
 
 void append_record_to_proto(const taxi::TripRecord& rec, mini2::TripRecordMsg* out) {
@@ -370,10 +472,11 @@ public:
             merged_records.push_back(std::move(msg));
         }
 
+        const auto replica_targets = expand_replica_targets();
         std::vector<std::future<ChildCallResult>> futures;
-        futures.reserve(runtime_.children.size());
-        for (const auto& child_id : runtime_.children) {
-            auto stub_it = child_stubs_.find(child_id);
+        futures.reserve(replica_targets.size());
+        for (const auto& target : replica_targets) {
+            auto stub_it = child_stubs_.find(target.replica_id);
             if (stub_it == child_stubs_.end()) {
                 continue;
             }
@@ -381,11 +484,15 @@ public:
             forward_request.set_request_id(request_id);
             forward_request.set_origin_node(runtime_.node_id);
             *forward_request.mutable_query() = effective_request;
+            forward_request.mutable_bft_meta()->set_node_id(runtime_.node_id);
 
             mini2::NodeService::Stub* stub = stub_it->second.get();
-            futures.push_back(std::async(std::launch::async, [child_id, forward_request, stub]() mutable {
+            futures.push_back(std::async(
+                std::launch::async,
+                [target, forward_request, stub]() mutable {
                 ChildCallResult result;
-                result.child_id = child_id;
+                result.logical_child_id = target.logical_child_id;
+                result.replica_id = target.replica_id;
                 ::grpc::ClientContext client_ctx;
                 client_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
                 result.status = stub->ForwardQuery(&client_ctx, forward_request, &result.response);
@@ -442,35 +549,15 @@ public:
                              first_chunk_count = static_cast<std::int64_t>(first_end),
                              first_chunk_fare_sum,
                              futures = std::move(futures)]() mutable {
-                    std::vector<mini2::TripRecordMsg> child_records;
-                    double child_agg_sum = 0.0;
-                    std::int64_t child_agg_count = 0;
-
+                    std::vector<ChildCallResult> child_results;
+                    child_results.reserve(futures.size());
                     for (auto& future : futures) {
                         if (cancel_flag->load(std::memory_order_acquire)) {
                             return;
                         }
-                        ChildCallResult child_result = future.get();
-                        if (!child_result.status.ok()) {
-                            std::cout << "[A] request_id=" << request_id
-                                      << " child=" << child_result.child_id
-                                      << " forward failed: "
-                                      << child_result.status.error_message() << '\n';
-                            continue;
-                        }
-                        if (child_result.response.request_id() != request_id) {
-                            std::cout << "[A] request_id=" << request_id
-                                      << " child=" << child_result.child_id
-                                      << " returned mismatched request_id="
-                                      << child_result.response.request_id() << '\n';
-                            continue;
-                        }
-                        child_agg_sum += child_result.response.aggregation_sum();
-                        child_agg_count += child_result.response.aggregation_count();
-                        for (const auto& record : child_result.response.records()) {
-                            child_records.push_back(record);
-                        }
+                        child_results.push_back(future.get());
                     }
+                    const ChildMergeResult merged_child = collect_child_merge_result(request_id, child_results);
 
                     std::lock_guard<std::mutex> lock(state_mutex_);
                     if (canceled_ids_.count(request_id) != 0) {
@@ -481,9 +568,9 @@ public:
                         return;
                     }
                     auto& entry = cache_it->second;
-                    entry.aggregation_sum += child_agg_sum;
-                    entry.aggregation_count += child_agg_count;
-                    for (const auto& record : child_records) {
+                    entry.aggregation_sum += merged_child.aggregation_sum;
+                    entry.aggregation_count += merged_child.aggregation_count;
+                    for (const auto& record : merged_child.records) {
                         entry.stream_records_after_first.push_back(record);
                     }
                     if (query_type != "aggregate") {
@@ -519,32 +606,26 @@ public:
             return ::grpc::Status::OK;
         }
 
-        std::cout << "[A] request_id=" << request_id << " fan-out children=" << runtime_.children.size() << '\n';
+        std::cout << "[A] request_id=" << request_id << " fan-out children=" << replica_targets.size() << '\n';
+        std::vector<ChildCallResult> child_results;
+        child_results.reserve(futures.size());
         for (auto& future : futures) {
             if (cancel_flag->load(std::memory_order_acquire)) {
                 break;
             }
-            ChildCallResult child_result = future.get();
-            if (cancel_flag->load(std::memory_order_acquire)) {
-                break;
-            }
-            if (!child_result.status.ok()) {
-                std::cout << "[A] request_id=" << request_id
-                          << " child=" << child_result.child_id
-                          << " forward failed: " << child_result.status.error_message() << '\n';
-                continue;
-            }
-            if (child_result.response.request_id() != request_id) {
-                std::cout << "[A] request_id=" << request_id
-                          << " child=" << child_result.child_id
-                          << " returned mismatched request_id="
-                          << child_result.response.request_id() << '\n';
-                continue;
-            }
-            merged_sum += child_result.response.aggregation_sum();
-            merged_count += child_result.response.aggregation_count();
-            for (const auto& record : child_result.response.records()) {
+            child_results.push_back(future.get());
+        }
+        const ChildMergeResult merged_child = collect_child_merge_result(request_id, child_results);
+        if (!cancel_flag->load(std::memory_order_acquire)) {
+            merged_sum += merged_child.aggregation_sum;
+            merged_count += merged_child.aggregation_count;
+            for (const auto& record : merged_child.records) {
                 merged_records.push_back(record);
+            }
+        }
+        if (cancel_flag->load(std::memory_order_acquire)) {
+            for (auto& future : futures) {
+                (void)future.wait_for(std::chrono::milliseconds(0));
             }
         }
 
@@ -705,6 +786,167 @@ public:
     }
 
 private:
+    struct ReplicaTarget {
+        std::string logical_child_id;
+        std::string replica_id;
+    };
+
+    std::vector<ReplicaTarget> expand_replica_targets() const
+    {
+        std::vector<ReplicaTarget> out;
+        for (const auto& logical_child : runtime_.children) {
+            auto it = runtime_.bft_replica_groups.find(logical_child);
+            if (runtime_.bft_lite && it != runtime_.bft_replica_groups.end() && !it->second.empty()) {
+                for (const auto& replica_id : it->second) {
+                    if (child_stubs_.find(replica_id) != child_stubs_.end()) {
+                        out.push_back(ReplicaTarget {logical_child, replica_id});
+                    }
+                }
+            } else {
+                if (child_stubs_.find(logical_child) != child_stubs_.end()) {
+                    out.push_back(ReplicaTarget {logical_child, logical_child});
+                }
+            }
+        }
+        return out;
+    }
+
+    bool verify_bft_metadata(
+        const std::string& request_id,
+        const ChildCallResult& result) const
+    {
+        if (!runtime_.bft_lite) {
+            return true;
+        }
+        if (!result.response.has_bft_meta()) {
+            std::cout << "[A][BFT] request_id=" << request_id
+                      << " child=" << result.replica_id
+                      << " rejected: missing bft_meta\n";
+            return false;
+        }
+        const auto& meta = result.response.bft_meta();
+        if (meta.node_id() != result.replica_id) {
+            std::cout << "[A][BFT] request_id=" << request_id
+                      << " child=" << result.replica_id
+                      << " rejected: meta.node_id mismatch (" << meta.node_id() << ")\n";
+            return false;
+        }
+        if (meta.payload_hash().empty()) {
+            std::cout << "[A][BFT] request_id=" << request_id
+                      << " child=" << result.replica_id
+                      << " rejected: missing payload_hash\n";
+            return false;
+        }
+        if (meta.auth_tag().empty()) {
+            std::cout << "[A][BFT] request_id=" << request_id
+                      << " child=" << result.replica_id
+                      << " rejected: missing auth_tag\n";
+            return false;
+        }
+        return true;
+    }
+
+    ChildMergeResult collect_child_merge_result(
+        const std::string& request_id,
+        const std::vector<ChildCallResult>& child_results) const
+    {
+        ChildMergeResult merged;
+        std::unordered_map<std::string, std::vector<const ChildCallResult*>> by_logical;
+        for (const auto& result : child_results) {
+            by_logical[result.logical_child_id].push_back(&result);
+        }
+
+        for (const auto& logical_child : runtime_.children) {
+            const auto it = by_logical.find(logical_child);
+            if (it == by_logical.end()) {
+                continue;
+            }
+
+            std::vector<const ChildCallResult*> valid;
+            valid.reserve(it->second.size());
+            std::unordered_map<std::string, std::vector<const ChildCallResult*>> by_hash;
+            for (const ChildCallResult* result : it->second) {
+                if (!result->status.ok()) {
+                    std::cout << "[A] request_id=" << request_id
+                              << " child=" << result->replica_id
+                              << " forward failed: " << result->status.error_message() << '\n';
+                    continue;
+                }
+                if (result->response.request_id() != request_id) {
+                    std::cout << "[A] request_id=" << request_id
+                              << " child=" << result->replica_id
+                              << " returned mismatched request_id="
+                              << result->response.request_id() << '\n';
+                    continue;
+                }
+                if (!verify_bft_metadata(request_id, *result)) {
+                    continue;
+                }
+                valid.push_back(result);
+                const std::string payload_hash = runtime_.bft_lite && result->response.has_bft_meta()
+                    ? result->response.bft_meta().payload_hash()
+                    : build_forward_payload_hash(result->response);
+                by_hash[payload_hash].push_back(result);
+            }
+            if (valid.empty()) {
+                continue;
+            }
+
+            std::size_t quorum = 1;
+            if (runtime_.bft_lite) {
+                std::size_t configured_replicas = it->second.size();
+                auto cfg_it = runtime_.bft_replica_groups.find(logical_child);
+                if (cfg_it != runtime_.bft_replica_groups.end()) {
+                    configured_replicas = cfg_it->second.size();
+                }
+                const std::size_t maj = configured_replicas / 2 + 1;
+                const std::size_t resilient =
+                    configured_replicas > static_cast<std::size_t>(runtime_.bft_fault_threshold)
+                    ? configured_replicas - static_cast<std::size_t>(runtime_.bft_fault_threshold)
+                    : configured_replicas;
+                quorum = std::max<std::size_t>(1, std::max(maj, resilient));
+            }
+
+            const std::vector<const ChildCallResult*>* winner_bucket = nullptr;
+            for (const auto& [hash_key, bucket] : by_hash) {
+                (void)hash_key;
+                if (winner_bucket == nullptr || bucket.size() > winner_bucket->size()) {
+                    winner_bucket = &bucket;
+                }
+            }
+            if (winner_bucket == nullptr || winner_bucket->size() < quorum) {
+                std::cout << "[A][BFT] request_id=" << request_id
+                          << " logical_child=" << logical_child
+                          << " rejected: quorum not met (have="
+                          << (winner_bucket == nullptr ? 0 : winner_bucket->size())
+                          << ", need=" << quorum << ")\n";
+                continue;
+            }
+
+            if (runtime_.bft_lite && by_hash.size() > 1) {
+                for (const auto& [hash_key, bucket] : by_hash) {
+                    if (&bucket == winner_bucket) {
+                        continue;
+                    }
+                    for (const ChildCallResult* outlier : bucket) {
+                        std::cout << "[A][BFT] request_id=" << request_id
+                                  << " logical_child=" << logical_child
+                                  << " excluded_replica=" << outlier->replica_id
+                                  << " reason=payload_mismatch\n";
+                    }
+                }
+            }
+
+            const ChildCallResult* selected = winner_bucket->front();
+            merged.aggregation_sum += selected->response.aggregation_sum();
+            merged.aggregation_count += selected->response.aggregation_count();
+            for (const auto& record : selected->response.records()) {
+                merged.records.push_back(record);
+            }
+        }
+        return merged;
+    }
+
     static void rebuild_chunk_views(ChunkCacheEntry& entry)
     {
         entry.chunks_after_first.clear();
@@ -780,6 +1022,7 @@ int main(int argc, char** argv) {
         std::cout << "  loaded_rows: " << runtime.records.size() << '\n';
         std::cout << "  chunk_size: " << runtime.chunk_size << '\n';
         std::cout << "  stream_up: " << (runtime.stream_up ? "true" : "false") << '\n';
+        std::cout << "  bft_mode: " << (runtime.bft_lite ? "lite" : "off") << '\n';
         std::cout << "  children: ";
         if (runtime.children.empty()) {
             std::cout << "(none)\n";

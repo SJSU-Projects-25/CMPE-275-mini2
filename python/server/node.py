@@ -5,12 +5,14 @@ import argparse
 import csv
 import json
 import sys
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import hashlib
 
 PYTHON_DIR = Path(__file__).resolve().parents[1]
 if str(PYTHON_DIR) not in sys.path:
@@ -51,6 +53,9 @@ class NodeContext:
     records: list[TripRecord]
     submit_local_only: bool
     chunk_size: int
+    bft_mode: str
+    bft_auth_type: str
+    bft_key: str
 
 
 def _resolve_path(raw_path: str, config_path: Path) -> Path:
@@ -210,6 +215,13 @@ def load_node_context(
     if chunk_size < 1:
         chunk_size = 500
 
+    bft_mode = str(config.get("bft_mode", "off"))
+    bft_cfg = config.get("bft", {}) if isinstance(config.get("bft", {}), dict) else {}
+    auth_cfg = bft_cfg.get("auth", {}) if isinstance(bft_cfg.get("auth", {}), dict) else {}
+    bft_auth_type = str(auth_cfg.get("type", "off"))
+    keys_cfg = auth_cfg.get("keys", {}) if isinstance(auth_cfg.get("keys", {}), dict) else {}
+    bft_key = str(keys_cfg.get(node_id, ""))
+
     return NodeContext(
         node_id=node_id,
         host=host,
@@ -221,6 +233,9 @@ def load_node_context(
         records=records,
         submit_local_only=submit_local_only,
         chunk_size=chunk_size,
+        bft_mode=bft_mode,
+        bft_auth_type=bft_auth_type,
+        bft_key=bft_key,
     )
 
 
@@ -261,8 +276,59 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                 request_id=request.request_id,
                 origin_node=self.context.node_id,
                 query=request.query,
+                bft_meta=request.bft_meta,
             )
             return stub.ForwardQuery(child_request, timeout=10.0)
+
+    @staticmethod
+    def _build_payload_hash(response: mini2_pb2.ForwardResponse) -> str:
+        payload = [
+            response.request_id,
+            response.source_node,
+            f"{response.aggregation_sum}",
+            f"{response.aggregation_avg}",
+            f"{response.aggregation_count}",
+            f"{len(response.records)}",
+        ]
+        for rec in response.records:
+            payload.extend(
+                [
+                    str(rec.vendor_id),
+                    str(rec.pickup_timestamp),
+                    str(rec.dropoff_timestamp),
+                    str(rec.passenger_count),
+                    str(rec.trip_distance),
+                    str(rec.rate_code_id),
+                    str(int(rec.store_and_fwd_flag)),
+                    str(rec.pu_location_id),
+                    str(rec.do_location_id),
+                    str(rec.payment_type),
+                    str(rec.fare_amount),
+                    str(rec.extra),
+                    str(rec.mta_tax),
+                    str(rec.tip_amount),
+                    str(rec.tolls_amount),
+                    str(rec.improvement_surcharge),
+                    str(rec.total_amount),
+                ]
+            )
+        return hashlib.sha256("|".join(payload).encode("utf-8")).hexdigest()
+
+    def _attach_bft_meta(self, response: mini2_pb2.ForwardResponse) -> mini2_pb2.ForwardResponse:
+        if self.context.bft_mode != "lite":
+            return response
+        payload_hash = self._build_payload_hash(response)
+        auth_source = (
+            f"{self.context.node_id}|{response.request_id}|{payload_hash}|{self.context.bft_key}"
+        )
+        auth_tag = hashlib.sha256(auth_source.encode("utf-8")).hexdigest()
+        response.bft_meta.node_id = self.context.node_id
+        response.bft_meta.payload_hash = payload_hash
+        response.bft_meta.auth_tag = auth_tag
+        response.bft_meta.nonce = int(time.time_ns() & 0xFFFFFFFFFFFFFFFF)
+        response.bft_meta.timestamp_ms = int(time.time() * 1000)
+        response.bft_meta.algorithm = "hmac-sha256"
+        return response
 
     def _run_query_and_maybe_forward(
         self,
@@ -328,7 +394,7 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             f"{merged_count} (local={local_result.aggregation_count})",
             flush=True,
         )
-        return mini2_pb2.ForwardResponse(
+        response = mini2_pb2.ForwardResponse(
             request_id=request_id,
             source_node=self.context.node_id,
             records=merged_records,
@@ -336,6 +402,7 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             aggregation_avg=merged_avg,
             aggregation_count=merged_count,
         )
+        return self._attach_bft_meta(response)
 
     def ForwardQuery(
         self, request: mini2_pb2.ForwardRequest, rpc_context: grpc.ServicerContext
@@ -432,6 +499,7 @@ def main() -> int:
     print(f"  port: {context.port}", flush=True)
     print(f"  children: {children_text}", flush=True)
     print(f"  submit_local_only: {context.submit_local_only}", flush=True)
+    print(f"  bft_mode: {context.bft_mode}", flush=True)
     print(f"  data_file: {context.data_path.as_posix()}", flush=True)
     print(f"  loaded_records: {len(context.records)}", flush=True)
     serve(context)

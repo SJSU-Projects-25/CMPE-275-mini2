@@ -100,7 +100,7 @@
   "max_concurrent_requests": 5,
   "chunk_timeout_seconds": 30,
   "stream_up": true,
-  "bft_mode": "off",
+  "bft_mode": "lite",
   "bft": {
     "fault_threshold": 1,
     "replica_groups": {
