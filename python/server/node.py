@@ -7,6 +7,7 @@ import json
 import sys
 import time
 import uuid
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
 from dataclasses import dataclass
@@ -56,6 +57,8 @@ class NodeContext:
     bft_mode: str
     bft_auth_type: str
     bft_key: str
+    fault_injection_enabled: bool
+    fault_injection_nodes: dict[str, dict[str, Any]]
 
 
 def _resolve_path(raw_path: str, config_path: Path) -> Path:
@@ -221,6 +224,9 @@ def load_node_context(
     bft_auth_type = str(auth_cfg.get("type", "off"))
     keys_cfg = auth_cfg.get("keys", {}) if isinstance(auth_cfg.get("keys", {}), dict) else {}
     bft_key = str(keys_cfg.get(node_id, ""))
+    fi_cfg = config.get("fault_injection", {}) if isinstance(config.get("fault_injection", {}), dict) else {}
+    fi_enabled = bool(fi_cfg.get("enabled", False))
+    fi_nodes = fi_cfg.get("nodes", {}) if isinstance(fi_cfg.get("nodes", {}), dict) else {}
 
     return NodeContext(
         node_id=node_id,
@@ -236,6 +242,8 @@ def load_node_context(
         bft_mode=bft_mode,
         bft_auth_type=bft_auth_type,
         bft_key=bft_key,
+        fault_injection_enabled=fi_enabled,
+        fault_injection_nodes=fi_nodes,
     )
 
 
@@ -330,6 +338,45 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         response.bft_meta.algorithm = "hmac-sha256"
         return response
 
+    def _apply_fault_injection(
+        self, response: mini2_pb2.ForwardResponse, rpc_context: grpc.ServicerContext | None
+    ) -> mini2_pb2.ForwardResponse | None:
+        if not self.context.fault_injection_enabled:
+            return response
+        node_cfg = self.context.fault_injection_nodes.get(self.context.node_id)
+        if not isinstance(node_cfg, dict):
+            return response
+        probability = float(node_cfg.get("probability", 1.0))
+        if probability < 1.0 and random.random() > probability:
+            return response
+        mode = str(node_cfg.get("mode", "none"))
+        delay_ms = int(node_cfg.get("delay_ms", 0))
+        if delay_ms > 0:
+            time.sleep(delay_ms / 1000.0)
+        if mode == "drop":
+            if rpc_context is not None:
+                rpc_context.set_code(grpc.StatusCode.UNAVAILABLE)
+                rpc_context.set_details("fault injection drop")
+            print(f"[{self.context.node_id}] fault_injection mode=drop", flush=True)
+            return None
+        if mode == "mutation":
+            response.bft_meta.node_id = f"{self.context.node_id}-MUTATED"
+            print(f"[{self.context.node_id}] fault_injection mode=mutation", flush=True)
+            return response
+        if mode == "wrong_aggregation":
+            response.aggregation_sum = response.aggregation_sum + 1000.0
+            if response.aggregation_count > 0:
+                response.aggregation_avg = response.aggregation_sum / response.aggregation_count
+            print(f"[{self.context.node_id}] fault_injection mode=wrong_aggregation", flush=True)
+            return response
+        if mode == "delay":
+            print(
+                f"[{self.context.node_id}] fault_injection mode=delay delay_ms={delay_ms}",
+                flush=True,
+            )
+            return response
+        return response
+
     def _run_query_and_maybe_forward(
         self,
         request_id: str,
@@ -407,12 +454,16 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
     def ForwardQuery(
         self, request: mini2_pb2.ForwardRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.ForwardResponse:
-        return self._run_query_and_maybe_forward(
+        response = self._run_query_and_maybe_forward(
             request_id=request.request_id,
             query=request.query,
             origin_node=request.origin_node,
             allow_forwarding=True,
         )
+        maybe_faulted = self._apply_fault_injection(response, rpc_context)
+        if maybe_faulted is None:
+            return mini2_pb2.ForwardResponse()
+        return maybe_faulted
 
     def SubmitQuery(
         self, request: mini2_pb2.QueryRequest, rpc_context: grpc.ServicerContext
@@ -500,6 +551,7 @@ def main() -> int:
     print(f"  children: {children_text}", flush=True)
     print(f"  submit_local_only: {context.submit_local_only}", flush=True)
     print(f"  bft_mode: {context.bft_mode}", flush=True)
+    print(f"  fault_injection_enabled: {context.fault_injection_enabled}", flush=True)
     print(f"  data_file: {context.data_path.as_posix()}", flush=True)
     print(f"  loaded_records: {len(context.records)}", flush=True)
     serve(context)

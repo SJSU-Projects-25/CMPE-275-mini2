@@ -146,5 +146,15 @@
         "I": "dev-bft-key-I"
       }
     }
+  },
+  "fault_injection": {
+    "enabled": false,
+    "nodes": {
+      "G": {
+        "mode": "none",
+        "probability": 1.0,
+        "delay_ms": 0
+      }
+    }
   }
 }
