@@ -211,6 +211,7 @@ int main(int argc, char** argv) {
         std::cout << "entry: " << endpoint << '\n';
         std::cout << "query_type: " << opt.query_type << '\n';
         std::cout << "total_chunks: " << total_chunks << '\n';
+        std::cout << "effective_chunk_size: " << first.effective_chunk_size() << '\n';
         std::cout << "total_records_received: " << total_records << '\n';
         std::cout << "elapsed_ms: " << elapsed_ms << '\n';
 

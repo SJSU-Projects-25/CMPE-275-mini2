@@ -61,6 +61,8 @@ message ChunkResponse {
   double aggregation_sum = 6;
   double aggregation_avg = 7;
   int64 aggregation_count = 8;
+  // Records per chunk used when this response was framed (dynamic sizing at entry).
+  int32 effective_chunk_size = 9;
 }
 
 message ChunkRequest {

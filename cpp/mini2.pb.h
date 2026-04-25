@@ -2402,9 +2402,10 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
     kChunkIndexFieldNumber = 2,
     kTotalChunksFieldNumber = 3,
     kAggregationSumFieldNumber = 6,
+    kIsLastFieldNumber = 4,
+    kEffectiveChunkSizeFieldNumber = 9,
     kAggregationAvgFieldNumber = 7,
     kAggregationCountFieldNumber = 8,
-    kIsLastFieldNumber = 4,
   };
   // repeated .mini2.TripRecordMsg records = 5;
   [[nodiscard]] int records_size()
@@ -2471,6 +2472,26 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
   void _internal_set_aggregation_sum(double value);
 
   public:
+  // bool is_last = 4;
+  void clear_is_last() ;
+  [[nodiscard]] bool is_last() const;
+  void set_is_last(bool value);
+
+  private:
+  bool _internal_is_last() const;
+  void _internal_set_is_last(bool value);
+
+  public:
+  // int32 effective_chunk_size = 9;
+  void clear_effective_chunk_size() ;
+  [[nodiscard]] ::int32_t effective_chunk_size() const;
+  void set_effective_chunk_size(::int32_t value);
+
+  private:
+  ::int32_t _internal_effective_chunk_size() const;
+  void _internal_set_effective_chunk_size(::int32_t value);
+
+  public:
   // double aggregation_avg = 7;
   void clear_aggregation_avg() ;
   [[nodiscard]] double aggregation_avg() const;
@@ -2491,21 +2512,11 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
   void _internal_set_aggregation_count(::int64_t value);
 
   public:
-  // bool is_last = 4;
-  void clear_is_last() ;
-  [[nodiscard]] bool is_last() const;
-  void set_is_last(bool value);
-
-  private:
-  bool _internal_is_last() const;
-  void _internal_set_is_last(bool value);
-
-  public:
   // @@protoc_insertion_point(class_scope:mini2.ChunkResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 8,
+  static const ::google::protobuf::internal::TcParseTable<4, 9,
                                    1, 46,
                                    2>
       _table_;
@@ -2534,9 +2545,10 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ChunkResponse final : public ::goog
     ::int32_t chunk_index_;
     ::int32_t total_chunks_;
     double aggregation_sum_;
+    bool is_last_;
+    ::int32_t effective_chunk_size_;
     double aggregation_avg_;
     ::int64_t aggregation_count_;
-    bool is_last_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -4629,7 +4641,7 @@ inline void ChunkResponse::clear_is_last() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.is_last_ = false;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000080U);
+                  0x00000020U);
 }
 inline bool ChunkResponse::is_last() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.is_last)
@@ -4637,7 +4649,7 @@ inline bool ChunkResponse::is_last() const {
 }
 inline void ChunkResponse::set_is_last(bool value) {
   _internal_set_is_last(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.is_last)
 }
 inline bool ChunkResponse::_internal_is_last() const {
@@ -4735,7 +4747,7 @@ inline void ChunkResponse::clear_aggregation_avg() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_avg_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000020U);
+                  0x00000080U);
 }
 inline double ChunkResponse::aggregation_avg() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.aggregation_avg)
@@ -4743,7 +4755,7 @@ inline double ChunkResponse::aggregation_avg() const {
 }
 inline void ChunkResponse::set_aggregation_avg(double value) {
   _internal_set_aggregation_avg(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.aggregation_avg)
 }
 inline double ChunkResponse::_internal_aggregation_avg() const {
@@ -4760,7 +4772,7 @@ inline void ChunkResponse::clear_aggregation_count() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_count_ = ::int64_t{0};
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000040U);
+                  0x00000100U);
 }
 inline ::int64_t ChunkResponse::aggregation_count() const {
   // @@protoc_insertion_point(field_get:mini2.ChunkResponse.aggregation_count)
@@ -4768,7 +4780,7 @@ inline ::int64_t ChunkResponse::aggregation_count() const {
 }
 inline void ChunkResponse::set_aggregation_count(::int64_t value) {
   _internal_set_aggregation_count(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
   // @@protoc_insertion_point(field_set:mini2.ChunkResponse.aggregation_count)
 }
 inline ::int64_t ChunkResponse::_internal_aggregation_count() const {
@@ -4778,6 +4790,31 @@ inline ::int64_t ChunkResponse::_internal_aggregation_count() const {
 inline void ChunkResponse::_internal_set_aggregation_count(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.aggregation_count_ = value;
+}
+
+// int32 effective_chunk_size = 9;
+inline void ChunkResponse::clear_effective_chunk_size() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.effective_chunk_size_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000040U);
+}
+inline ::int32_t ChunkResponse::effective_chunk_size() const {
+  // @@protoc_insertion_point(field_get:mini2.ChunkResponse.effective_chunk_size)
+  return _internal_effective_chunk_size();
+}
+inline void ChunkResponse::set_effective_chunk_size(::int32_t value) {
+  _internal_set_effective_chunk_size(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  // @@protoc_insertion_point(field_set:mini2.ChunkResponse.effective_chunk_size)
+}
+inline ::int32_t ChunkResponse::_internal_effective_chunk_size() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.effective_chunk_size_;
+}
+inline void ChunkResponse::_internal_set_effective_chunk_size(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.effective_chunk_size_ = value;
 }
 
 // -------------------------------------------------------------------

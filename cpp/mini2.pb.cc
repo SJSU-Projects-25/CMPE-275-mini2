@@ -323,9 +323,10 @@ inline constexpr ChunkResponse::Impl_::Impl_(
         chunk_index_{0},
         total_chunks_{0},
         aggregation_sum_{0},
+        is_last_{false},
+        effective_chunk_size_{0},
         aggregation_avg_{0},
-        aggregation_count_{::int64_t{0}},
-        is_last_{false} {}
+        aggregation_count_{::int64_t{0}} {}
 
 template <typename>
 constexpr ChunkResponse::ChunkResponse(::_pbi::ConstantInitialized)
@@ -505,7 +506,7 @@ const ::uint32_t
         15,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_._has_bits_),
-        11, // hasbit index offset
+        12, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.request_id_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.chunk_index_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.total_chunks_),
@@ -514,13 +515,15 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.aggregation_sum_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.aggregation_avg_),
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.aggregation_count_),
+        PROTOBUF_FIELD_OFFSET(::mini2::ChunkResponse, _impl_.effective_chunk_size_),
         1,
         2,
         3,
-        7,
+        5,
         0,
         4,
-        5,
+        7,
+        8,
         6,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::mini2::ChunkRequest, _impl_._has_bits_),
@@ -574,11 +577,11 @@ static const ::_pbi::MigrationSchema
         {30, sizeof(::mini2::QueryRequest)},
         {45, sizeof(::mini2::TripRecordMsg)},
         {82, sizeof(::mini2::ChunkResponse)},
-        {101, sizeof(::mini2::ChunkRequest)},
-        {108, sizeof(::mini2::ForwardRequest)},
-        {117, sizeof(::mini2::ForwardResponse)},
-        {132, sizeof(::mini2::CancelRequest)},
-        {137, sizeof(::mini2::CancelResponse)},
+        {103, sizeof(::mini2::ChunkRequest)},
+        {110, sizeof(::mini2::ForwardRequest)},
+        {119, sizeof(::mini2::ForwardResponse)},
+        {134, sizeof(::mini2::CancelRequest)},
+        {139, sizeof(::mini2::CancelResponse)},
 };
 static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::mini2::_TimeRangeQuery_default_instance_._instance,
@@ -620,35 +623,36 @@ const char descriptor_table_protodef_mini2_2eproto[] ABSL_ATTRIBUTE_SECTION_VARI
     "re_amount\030\013 \001(\001\022\r\n\005extra\030\014 \001(\001\022\017\n\007mta_ta"
     "x\030\r \001(\001\022\022\n\ntip_amount\030\016 \001(\001\022\024\n\014tolls_amo"
     "unt\030\017 \001(\001\022\035\n\025improvement_surcharge\030\020 \001(\001"
-    "\022\024\n\014total_amount\030\021 \001(\001\"\323\001\n\rChunkResponse"
+    "\022\024\n\014total_amount\030\021 \001(\001\"\361\001\n\rChunkResponse"
     "\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 \001("
     "\005\022\024\n\014total_chunks\030\003 \001(\005\022\017\n\007is_last\030\004 \001(\010"
     "\022%\n\007records\030\005 \003(\0132\024.mini2.TripRecordMsg\022"
     "\027\n\017aggregation_sum\030\006 \001(\001\022\027\n\017aggregation_"
-    "avg\030\007 \001(\001\022\031\n\021aggregation_count\030\010 \001(\003\"7\n\014"
-    "ChunkRequest\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013chun"
-    "k_index\030\002 \001(\005\"]\n\016ForwardRequest\022\022\n\nreque"
-    "st_id\030\001 \001(\t\022\023\n\013origin_node\030\002 \001(\t\022\"\n\005quer"
-    "y\030\003 \001(\0132\023.mini2.QueryRequest\"\256\001\n\017Forward"
-    "Response\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013source_n"
-    "ode\030\002 \001(\t\022%\n\007records\030\003 \003(\0132\024.mini2.TripR"
-    "ecordMsg\022\027\n\017aggregation_sum\030\004 \001(\001\022\027\n\017agg"
-    "regation_avg\030\005 \001(\001\022\031\n\021aggregation_count\030"
-    "\006 \001(\003\"#\n\rCancelRequest\022\022\n\nrequest_id\030\001 \001"
-    "(\t\"&\n\016CancelResponse\022\024\n\014acknowledged\030\001 \001"
-    "(\0102\373\001\n\013NodeService\0228\n\013SubmitQuery\022\023.mini"
-    "2.QueryRequest\032\024.mini2.ChunkResponse\0227\n\n"
-    "FetchChunk\022\023.mini2.ChunkRequest\032\024.mini2."
-    "ChunkResponse\022=\n\014ForwardQuery\022\025.mini2.Fo"
-    "rwardRequest\032\026.mini2.ForwardResponse\022:\n\013"
-    "CancelQuery\022\024.mini2.CancelRequest\032\025.mini"
-    "2.CancelResponseb\006proto3"
+    "avg\030\007 \001(\001\022\031\n\021aggregation_count\030\010 \001(\003\022\034\n\024"
+    "effective_chunk_size\030\t \001(\005\"7\n\014ChunkReque"
+    "st\022\022\n\nrequest_id\030\001 \001(\t\022\023\n\013chunk_index\030\002 "
+    "\001(\005\"]\n\016ForwardRequest\022\022\n\nrequest_id\030\001 \001("
+    "\t\022\023\n\013origin_node\030\002 \001(\t\022\"\n\005query\030\003 \001(\0132\023."
+    "mini2.QueryRequest\"\256\001\n\017ForwardResponse\022\022"
+    "\n\nrequest_id\030\001 \001(\t\022\023\n\013source_node\030\002 \001(\t\022"
+    "%\n\007records\030\003 \003(\0132\024.mini2.TripRecordMsg\022\027"
+    "\n\017aggregation_sum\030\004 \001(\001\022\027\n\017aggregation_a"
+    "vg\030\005 \001(\001\022\031\n\021aggregation_count\030\006 \001(\003\"#\n\rC"
+    "ancelRequest\022\022\n\nrequest_id\030\001 \001(\t\"&\n\016Canc"
+    "elResponse\022\024\n\014acknowledged\030\001 \001(\0102\373\001\n\013Nod"
+    "eService\0228\n\013SubmitQuery\022\023.mini2.QueryReq"
+    "uest\032\024.mini2.ChunkResponse\0227\n\nFetchChunk"
+    "\022\023.mini2.ChunkRequest\032\024.mini2.ChunkRespo"
+    "nse\022=\n\014ForwardQuery\022\025.mini2.ForwardReque"
+    "st\032\026.mini2.ForwardResponse\022:\n\013CancelQuer"
+    "y\022\024.mini2.CancelRequest\032\025.mini2.CancelRe"
+    "sponseb\006proto3"
 };
 static ::absl::once_flag descriptor_table_mini2_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_mini2_2eproto = {
     false,
     false,
-    1864,
+    1894,
     descriptor_table_protodef_mini2_2eproto,
     "mini2.proto",
     &descriptor_table_mini2_2eproto_once,
@@ -3136,9 +3140,9 @@ ChunkResponse::ChunkResponse(
                offsetof(Impl_, chunk_index_),
            reinterpret_cast<const char*>(&from._impl_) +
                offsetof(Impl_, chunk_index_),
-           offsetof(Impl_, is_last_) -
+           offsetof(Impl_, aggregation_count_) -
                offsetof(Impl_, chunk_index_) +
-               sizeof(Impl_::is_last_));
+               sizeof(Impl_::aggregation_count_));
 
   // @@protoc_insertion_point(copy_constructor:mini2.ChunkResponse)
 }
@@ -3162,9 +3166,9 @@ inline void ChunkResponse::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   ::memset(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, chunk_index_),
            0,
-           offsetof(Impl_, is_last_) -
+           offsetof(Impl_, aggregation_count_) -
                offsetof(Impl_, chunk_index_) +
-               sizeof(Impl_::is_last_));
+               sizeof(Impl_::aggregation_count_));
 }
 ChunkResponse::~ChunkResponse() {
   // @@protoc_insertion_point(destructor:mini2.ChunkResponse)
@@ -3242,16 +3246,16 @@ ChunkResponse::GetClassData() const {
   return ChunkResponse_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 8, 1, 46, 2>
+const ::_pbi::TcParseTable<4, 9, 1, 46, 2>
 ChunkResponse::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_._has_bits_),
     0, // no _extensions_
-    8, 56,  // max_field_number, fast_idx_mask
+    9, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967040,  // skipmap
+    4294966784,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    8,  // num_field_entries
+    9,  // num_field_entries
     1,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     ChunkResponse_class_data_.base(),
@@ -3261,10 +3265,7 @@ ChunkResponse::_table_ = {
     ::_pbi::TcParser::GetTable<::mini2::ChunkResponse>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // int64 aggregation_count = 8;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ChunkResponse, _impl_.aggregation_count_), 6>(),
-     {64, 6, 0,
-      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // string request_id = 1;
     {::_pbi::TcParser::FastUS1,
      {10, 1, 0,
@@ -3278,8 +3279,8 @@ ChunkResponse::_table_ = {
      {24, 3, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.total_chunks_)}},
     // bool is_last = 4;
-    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(ChunkResponse, _impl_.is_last_), 7>(),
-     {32, 7, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(ChunkResponse, _impl_.is_last_), 5>(),
+     {32, 5, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_)}},
     // repeated .mini2.TripRecordMsg records = 5;
     {::_pbi::TcParser::FastMtR1,
@@ -3291,8 +3292,22 @@ ChunkResponse::_table_ = {
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_sum_)}},
     // double aggregation_avg = 7;
     {::_pbi::TcParser::FastF64S1,
-     {57, 5, 0,
+     {57, 7, 0,
       PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_)}},
+    // int64 aggregation_count = 8;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(ChunkResponse, _impl_.aggregation_count_), 8>(),
+     {64, 8, 0,
+      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_)}},
+    // int32 effective_chunk_size = 9;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ChunkResponse, _impl_.effective_chunk_size_), 6>(),
+     {72, 6, 0,
+      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.effective_chunk_size_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -3303,15 +3318,17 @@ ChunkResponse::_table_ = {
     // int32 total_chunks = 3;
     {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.total_chunks_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
     // bool is_last = 4;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
     // repeated .mini2.TripRecordMsg records = 5;
     {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.records_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
     // double aggregation_sum = 6;
     {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_sum_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // double aggregation_avg = 7;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_avg_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kDouble)},
     // int64 aggregation_count = 8;
-    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_), _Internal::kHasBitsOffset + 8, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+    // int32 effective_chunk_size = 9;
+    {PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.effective_chunk_size_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::mini2::TripRecordMsg>()},
@@ -3340,9 +3357,10 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
   if (BatchCheckHasBit(cached_has_bits, 0x000000fcU)) {
     ::memset(&_impl_.chunk_index_, 0, static_cast<::size_t>(
-        reinterpret_cast<char*>(&_impl_.is_last_) -
-        reinterpret_cast<char*>(&_impl_.chunk_index_)) + sizeof(_impl_.is_last_));
+        reinterpret_cast<char*>(&_impl_.aggregation_avg_) -
+        reinterpret_cast<char*>(&_impl_.chunk_index_)) + sizeof(_impl_.aggregation_avg_));
   }
+  _impl_.aggregation_count_ = ::int64_t{0};
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -3395,7 +3413,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // bool is_last = 4;
-  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
     if (this_._internal_is_last() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteBoolToArray(
@@ -3426,7 +3444,7 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // double aggregation_avg = 7;
-  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
     if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteDoubleToArray(
@@ -3435,11 +3453,20 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
   }
 
   // int64 aggregation_count = 8;
-  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
     if (this_._internal_aggregation_count() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<8>(
               stream, this_._internal_aggregation_count(), target);
+    }
+  }
+
+  // int32 effective_chunk_size = 9;
+  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (this_._internal_effective_chunk_size() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<9>(
+              stream, this_._internal_effective_chunk_size(), target);
     }
   }
 
@@ -3503,23 +3530,32 @@ PROTOBUF_NOINLINE void ChunkResponse::Clear() {
         total_size += 9;
       }
     }
-    // double aggregation_avg = 7;
+    // bool is_last = 4;
     if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+      if (this_._internal_is_last() != 0) {
+        total_size += 2;
+      }
+    }
+    // int32 effective_chunk_size = 9;
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+      if (this_._internal_effective_chunk_size() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_effective_chunk_size());
+      }
+    }
+    // double aggregation_avg = 7;
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (::absl::bit_cast<::uint64_t>(this_._internal_aggregation_avg()) != 0) {
         total_size += 9;
       }
     }
+  }
+   {
     // int64 aggregation_count = 8;
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (this_._internal_aggregation_count() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_aggregation_count());
-      }
-    }
-    // bool is_last = 4;
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
-      if (this_._internal_is_last() != 0) {
-        total_size += 2;
       }
     }
   }
@@ -3573,19 +3609,24 @@ void ChunkResponse::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+      if (from._internal_is_last() != 0) {
+        _this->_impl_.is_last_ = from._impl_.is_last_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+      if (from._internal_effective_chunk_size() != 0) {
+        _this->_impl_.effective_chunk_size_ = from._impl_.effective_chunk_size_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (::absl::bit_cast<::uint64_t>(from._internal_aggregation_avg()) != 0) {
         _this->_impl_.aggregation_avg_ = from._impl_.aggregation_avg_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
-      if (from._internal_aggregation_count() != 0) {
-        _this->_impl_.aggregation_count_ = from._impl_.aggregation_count_;
-      }
-    }
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
-      if (from._internal_is_last() != 0) {
-        _this->_impl_.is_last_ = from._impl_.is_last_;
-      }
+  }
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
+    if (from._internal_aggregation_count() != 0) {
+      _this->_impl_.aggregation_count_ = from._impl_.aggregation_count_;
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -3610,8 +3651,8 @@ void ChunkResponse::InternalSwap(ChunkResponse* PROTOBUF_RESTRICT PROTOBUF_NONNU
   _impl_.records_.InternalSwap(&other->_impl_.records_);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.request_id_, &other->_impl_.request_id_, arena);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.is_last_)
-      + sizeof(ChunkResponse::_impl_.is_last_)
+      PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.aggregation_count_)
+      + sizeof(ChunkResponse::_impl_.aggregation_count_)
       - PROTOBUF_FIELD_OFFSET(ChunkResponse, _impl_.chunk_index_)>(
           reinterpret_cast<char*>(&_impl_.chunk_index_),
           reinterpret_cast<char*>(&other->_impl_.chunk_index_));

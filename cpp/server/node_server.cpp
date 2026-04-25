@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -295,6 +296,7 @@ LocalQueryResult execute_local_query(taxi::QueryEngine& engine, const mini2::Que
 
 struct ChunkCacheEntry {
     std::int32_t total_chunks = 0;
+    std::int32_t records_per_chunk = 0;
     double aggregation_sum = 0.0;
     double aggregation_avg = 0.0;
     std::int64_t aggregation_count = 0;
@@ -307,6 +309,8 @@ public:
     explicit NodeServiceImpl(const NodeRuntime& runtime)
         : runtime_(runtime), engine_(runtime_.records)
     {
+        dynamic_chunk_size_.store(
+            std::clamp(runtime_.chunk_size, 50, 2000), std::memory_order_relaxed);
         const double build_ms = engine_.build_indexes();
         std::cout << "Node " << runtime_.node_id << " query index initialized in "
                   << build_ms << " ms\n";
@@ -325,6 +329,7 @@ public:
         const mini2::QueryRequest* request,
         mini2::ChunkResponse* response) override
     {
+        const auto serve_t0 = std::chrono::steady_clock::now();
         const std::string request_id =
             request->request_id().empty() ? make_request_id() : request->request_id();
 
@@ -431,7 +436,7 @@ public:
             return ::grpc::Status(::grpc::StatusCode::CANCELLED, "query canceled");
         }
 
-        const int chunk_sz = std::max(1, runtime_.chunk_size);
+        const int chunk_sz = dynamic_chunk_size_.load(std::memory_order_relaxed);
         const int total_records = static_cast<int>(merged_records.size());
         std::int32_t total_chunks = 1;
         if (total_records > 0) {
@@ -446,6 +451,7 @@ public:
         response->set_aggregation_sum(merged_sum);
         response->set_aggregation_count(merged_count);
         response->set_aggregation_avg(merged_avg);
+        response->set_effective_chunk_size(chunk_sz);
 
         const int first_end = std::min(chunk_sz, total_records);
         for (int i = 0; i < first_end; ++i) {
@@ -455,6 +461,7 @@ public:
         if (total_chunks > 1) {
             ChunkCacheEntry entry;
             entry.total_chunks = total_chunks;
+            entry.records_per_chunk = chunk_sz;
             entry.aggregation_sum = merged_sum;
             entry.aggregation_avg = merged_avg;
             entry.aggregation_count = merged_count;
@@ -485,6 +492,11 @@ public:
             active_cancel_.erase(request_id);
             canceled_ids_.erase(request_id);
         }
+
+        const double submit_serve_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - serve_t0).count();
+        tune_after_chunk_served(submit_serve_ms);
+
         return ::grpc::Status::OK;
     }
 
@@ -493,10 +505,11 @@ public:
         const mini2::ChunkRequest* request,
         mini2::ChunkResponse* response) override
     {
+        const auto serve_t0 = std::chrono::steady_clock::now();
         const std::string& rid = request->request_id();
         const std::int32_t idx = request->chunk_index();
 
-        std::lock_guard<std::mutex> lock(state_mutex_);
+        std::unique_lock<std::mutex> lock(state_mutex_);
         if (canceled_ids_.count(rid) != 0) {
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "request canceled");
         }
@@ -515,6 +528,7 @@ public:
         response->set_aggregation_sum(entry.aggregation_sum);
         response->set_aggregation_avg(entry.aggregation_avg);
         response->set_aggregation_count(entry.aggregation_count);
+        response->set_effective_chunk_size(entry.records_per_chunk);
 
         const std::size_t slot = static_cast<std::size_t>(idx - 1);
         if (slot >= entry.chunks_after_first.size()) {
@@ -529,6 +543,12 @@ public:
             chunk_cache_.erase(rid);
             std::cout << "[A] request_id=" << rid << " cache evicted after last chunk\n";
         }
+        lock.unlock();
+
+        const double fetch_serve_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - serve_t0).count();
+        tune_after_chunk_served(fetch_serve_ms);
+
         return ::grpc::Status::OK;
     }
 
@@ -550,6 +570,23 @@ public:
     }
 
 private:
+    void tune_after_chunk_served(double serve_ms)
+    {
+        int cur = dynamic_chunk_size_.load(std::memory_order_relaxed);
+        int next = cur;
+        if (serve_ms < 10.0) {
+            next = static_cast<int>(std::lround(static_cast<double>(cur) * 1.2));
+        } else if (serve_ms > 100.0) {
+            next = static_cast<int>(std::lround(static_cast<double>(cur) * 0.8));
+        }
+        next = std::clamp(next, 50, 2000);
+        if (next != cur) {
+            std::cout << '[' << runtime_.node_id << "] dynamic_chunk_size " << cur << " -> " << next
+                      << " (serve_ms=" << serve_ms << ")\n";
+            dynamic_chunk_size_.store(next, std::memory_order_relaxed);
+        }
+    }
+
     const NodeRuntime& runtime_;
     taxi::QueryEngine engine_;
     std::unordered_map<std::string, std::unique_ptr<mini2::NodeService::Stub>> child_stubs_;
@@ -558,6 +595,7 @@ private:
     std::unordered_map<std::string, ChunkCacheEntry> chunk_cache_;
     std::unordered_map<std::string, std::shared_ptr<std::atomic<bool>>> active_cancel_;
     std::unordered_set<std::string> canceled_ids_;
+    std::atomic<int> dynamic_chunk_size_;
 };
 
 void run_server(const NodeRuntime& runtime) {

@@ -50,6 +50,7 @@ class NodeContext:
     node_addresses: dict[str, str]
     records: list[TripRecord]
     submit_local_only: bool
+    chunk_size: int
 
 
 def _resolve_path(raw_path: str, config_path: Path) -> Path:
@@ -204,6 +205,11 @@ def load_node_context(
     for name, cfg in nodes.items():
         node_addresses[name] = f"{cfg['host']}:{int(cfg['port'])}"
 
+    raw_chunk = config.get("chunk_size", 500)
+    chunk_size = int(raw_chunk) if isinstance(raw_chunk, (int, float)) else 500
+    if chunk_size < 1:
+        chunk_size = 500
+
     return NodeContext(
         node_id=node_id,
         host=host,
@@ -214,6 +220,7 @@ def load_node_context(
         node_addresses=node_addresses,
         records=records,
         submit_local_only=submit_local_only,
+        chunk_size=chunk_size,
     )
 
 
@@ -369,18 +376,21 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             aggregation_sum=forward_result.aggregation_sum,
             aggregation_avg=forward_result.aggregation_avg,
             aggregation_count=forward_result.aggregation_count,
+            effective_chunk_size=self.context.chunk_size,
         )
 
     def FetchChunk(
         self, request: mini2_pb2.ChunkRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.ChunkResponse:
         rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        rpc_context.set_details("FetchChunk is not supported on this node; use the C++ entry node.")
         return mini2_pb2.ChunkResponse()
 
     def CancelQuery(
         self, request: mini2_pb2.CancelRequest, rpc_context: grpc.ServicerContext
     ) -> mini2_pb2.CancelResponse:
         rpc_context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        rpc_context.set_details("CancelQuery is not supported on this node; use the C++ entry node.")
         return mini2_pb2.CancelResponse(acknowledged=False)
 
 
