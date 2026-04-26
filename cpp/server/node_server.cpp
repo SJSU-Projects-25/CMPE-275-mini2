@@ -421,12 +421,25 @@ public:
         const double build_ms = engine_.build_indexes();
         std::cout << "Node " << runtime_.node_id << " query index initialized in "
                   << build_ms << " ms\n";
-        for (const auto& child : runtime_.children) {
-            auto endpoint_it = runtime_.endpoints.find(child);
+        std::unordered_set<std::string> replica_targets(
+            runtime_.children.begin(), runtime_.children.end());
+        if (runtime_.bft_lite) {
+            for (const auto& logical_child : runtime_.children) {
+                auto group_it = runtime_.bft_replica_groups.find(logical_child);
+                if (group_it == runtime_.bft_replica_groups.end()) {
+                    continue;
+                }
+                for (const auto& replica_id : group_it->second) {
+                    replica_targets.insert(replica_id);
+                }
+            }
+        }
+        for (const auto& target_id : replica_targets) {
+            auto endpoint_it = runtime_.endpoints.find(target_id);
             if (endpoint_it == runtime_.endpoints.end()) {
                 continue;
             }
-            child_stubs_[child] = mini2::NodeService::NewStub(
+            child_stubs_[target_id] = mini2::NodeService::NewStub(
                 grpc::CreateChannel(endpoint_it->second, grpc::InsecureChannelCredentials()));
         }
     }
@@ -899,12 +912,19 @@ private:
                 if (cfg_it != runtime_.bft_replica_groups.end()) {
                     configured_replicas = cfg_it->second.size();
                 }
-                const std::size_t maj = configured_replicas / 2 + 1;
-                const std::size_t resilient =
-                    configured_replicas > static_cast<std::size_t>(runtime_.bft_fault_threshold)
-                    ? configured_replicas - static_cast<std::size_t>(runtime_.bft_fault_threshold)
-                    : configured_replicas;
-                quorum = std::max<std::size_t>(1, std::max(maj, resilient));
+                const std::size_t requested_f =
+                    static_cast<std::size_t>(std::max(0, runtime_.bft_fault_threshold));
+                const std::size_t min_replicas = 3 * requested_f + 1;
+                if (configured_replicas < min_replicas) {
+                    std::cout << "[A][BFT] request_id=" << request_id
+                              << " logical_child=" << logical_child
+                              << " rejected: requires n>=3f+1 (have="
+                              << configured_replicas
+                              << ", need=" << min_replicas
+                              << ", f=" << requested_f << ")\n";
+                    continue;
+                }
+                quorum = 2 * requested_f + 1;
             }
 
             const std::vector<const ChildCallResult*>* winner_bucket = nullptr;
