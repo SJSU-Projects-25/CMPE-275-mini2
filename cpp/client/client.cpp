@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -180,6 +181,11 @@ int main(int argc, char** argv) {
         std::int64_t total_records = static_cast<std::int64_t>(first.records_size());
         std::int32_t total_chunks = first.total_chunks();
 
+        double min_chunk_rtt_ms = std::numeric_limits<double>::max();
+        double max_chunk_rtt_ms = 0.0;
+        double sum_chunk_rtt_ms = 0.0;
+        int chunk_rtt_count = 0;
+
         if (!first.is_last()) {
             std::int32_t idx = 1;
             while (true) {
@@ -190,7 +196,11 @@ int main(int argc, char** argv) {
                 mini2::ChunkResponse chunk;
                 grpc::ClientContext fetch_ctx;
                 fetch_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(120));
+                const auto chunk_t0 = std::chrono::steady_clock::now();
                 const grpc::Status fetch_status = stub->FetchChunk(&fetch_ctx, chunk_req, &chunk);
+                const double chunk_rtt = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - chunk_t0).count();
+
                 if (!fetch_status.ok()) {
                     if (fetch_status.error_code() == grpc::StatusCode::UNAVAILABLE) {
                         std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -200,6 +210,12 @@ int main(int argc, char** argv) {
                               << fetch_status.error_message() << '\n';
                     return 1;
                 }
+
+                std::cout << "chunk_rtt_ms[" << idx << "]: " << chunk_rtt << '\n';
+                min_chunk_rtt_ms = std::min(min_chunk_rtt_ms, chunk_rtt);
+                max_chunk_rtt_ms = std::max(max_chunk_rtt_ms, chunk_rtt);
+                sum_chunk_rtt_ms += chunk_rtt;
+                ++chunk_rtt_count;
 
                 total_records += static_cast<std::int64_t>(chunk.records_size());
                 if (chunk.total_chunks() > 0) {
@@ -226,6 +242,15 @@ int main(int argc, char** argv) {
         std::cout << "effective_chunk_size: " << first.effective_chunk_size() << '\n';
         std::cout << "total_records_received: " << total_records << '\n';
         std::cout << "elapsed_ms: " << elapsed_ms << '\n';
+        if (chunk_rtt_count > 0) {
+            const double avg_rtt = sum_chunk_rtt_ms / static_cast<double>(chunk_rtt_count);
+            std::cout << "chunk_rtt_min_ms: " << min_chunk_rtt_ms << '\n';
+            std::cout << "chunk_rtt_max_ms: " << max_chunk_rtt_ms << '\n';
+            std::cout << "chunk_rtt_avg_ms: " << avg_rtt << '\n';
+        }
+        std::cout << "aggregation_sum: " << first.aggregation_sum() << '\n';
+        std::cout << "aggregation_count: " << first.aggregation_count() << '\n';
+        std::cout << "aggregation_avg: " << first.aggregation_avg() << '\n';
 
         return 0;
     } catch (const std::exception& ex) {

@@ -384,7 +384,14 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         origin_node: str,
         allow_forwarding: bool,
     ) -> mini2_pb2.ForwardResponse:
+        local_t0 = time.perf_counter()
         local_result = self.engine.execute_request(query)
+        local_ms = (time.perf_counter() - local_t0) * 1000.0
+        print(
+            f"[{self.context.node_id}] local_query_ms={local_ms:.2f}"
+            f" request={request_id} query_type={query.query_type}",
+            flush=True,
+        )
         merged_records = [_trip_record_to_proto(record) for record in local_result.records]
         merged_sum = local_result.aggregation_sum
         merged_count = local_result.aggregation_count

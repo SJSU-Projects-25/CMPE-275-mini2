@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cmath>
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -39,6 +41,8 @@ struct NodeRuntime {
     std::string host;
     int port = 0;
     int chunk_size = 500;
+    int max_concurrent_requests = 5;
+    int chunk_timeout_seconds = 30;
     bool stream_up = false;
     bool bft_lite = false;
     int bft_fault_threshold = 1;
@@ -197,6 +201,16 @@ NodeRuntime load_runtime(const CliOptions& cli) {
         }
     }
     runtime.stream_up = config.value("stream_up", false);
+    if (config.contains("max_concurrent_requests") &&
+        config.at("max_concurrent_requests").is_number_integer()) {
+        runtime.max_concurrent_requests =
+            std::max(1, config.at("max_concurrent_requests").get<int>());
+    }
+    if (config.contains("chunk_timeout_seconds") &&
+        config.at("chunk_timeout_seconds").is_number_integer()) {
+        runtime.chunk_timeout_seconds =
+            std::max(1, config.at("chunk_timeout_seconds").get<int>());
+    }
     const std::string bft_mode = config.value("bft_mode", std::string("off"));
     runtime.bft_lite = bft_mode == "lite";
     if (config.contains("bft") && config.at("bft").is_object()) {
@@ -399,6 +413,19 @@ LocalQueryResult execute_local_query(taxi::QueryEngine& engine, const mini2::Que
     return result;
 }
 
+#ifdef __linux__
+static std::string read_vmrss_line() {
+    std::ifstream status_file("/proc/self/status");
+    std::string line;
+    while (std::getline(status_file, line)) {
+        if (line.rfind("VmRSS:", 0) == 0) {
+            return line;
+        }
+    }
+    return "VmRSS: N/A";
+}
+#endif
+
 struct ChunkCacheEntry {
     std::int32_t total_chunks = 0;
     std::int32_t records_per_chunk = 0;
@@ -406,21 +433,29 @@ struct ChunkCacheEntry {
     double aggregation_avg = 0.0;
     std::int64_t aggregation_count = 0;
     bool finalized = false;
-    // Chunk indices 1 .. total_chunks-1 (chunk 0 is returned only from SubmitQuery).
     std::vector<std::vector<mini2::TripRecordMsg>> chunks_after_first;
     std::vector<mini2::TripRecordMsg> stream_records_after_first;
+    std::chrono::steady_clock::time_point last_access = std::chrono::steady_clock::now();
 };
 
 class NodeServiceImpl final : public mini2::NodeService::Service {
 public:
     explicit NodeServiceImpl(const NodeRuntime& runtime)
-        : runtime_(runtime), engine_(runtime_.records)
+        : runtime_(runtime),
+          engine_(runtime_.records),
+          max_concurrent_(std::max(1, runtime_.max_concurrent_requests)),
+          chunk_timeout_seconds_(std::max(1, runtime_.chunk_timeout_seconds))
     {
         dynamic_chunk_size_.store(
             std::clamp(runtime_.chunk_size, 50, 2000), std::memory_order_relaxed);
         const double build_ms = engine_.build_indexes();
         std::cout << "Node " << runtime_.node_id << " query index initialized in "
                   << build_ms << " ms\n";
+        std::cout << "  max_concurrent_requests: " << max_concurrent_ << '\n';
+        std::cout << "  chunk_timeout_seconds: " << chunk_timeout_seconds_ << '\n';
+#ifdef __linux__
+        std::cout << "  " << read_vmrss_line() << '\n';
+#endif
         std::unordered_set<std::string> replica_targets(
             runtime_.children.begin(), runtime_.children.end());
         if (runtime_.bft_lite) {
@@ -442,6 +477,16 @@ public:
             child_stubs_[target_id] = mini2::NodeService::NewStub(
                 grpc::CreateChannel(endpoint_it->second, grpc::InsecureChannelCredentials()));
         }
+
+        shutdown_.store(false, std::memory_order_relaxed);
+        eviction_thread_ = std::thread(&NodeServiceImpl::run_eviction_loop, this);
+    }
+
+    ~NodeServiceImpl() {
+        shutdown_.store(true, std::memory_order_release);
+        if (eviction_thread_.joinable()) {
+            eviction_thread_.join();
+        }
     }
 
     ::grpc::Status SubmitQuery(
@@ -449,6 +494,25 @@ public:
         const mini2::QueryRequest* request,
         mini2::ChunkResponse* response) override
     {
+        // Concurrency limit: block if max active submits already in progress
+        {
+            std::unique_lock<std::mutex> slot_lock(state_mutex_);
+            concurrency_cv_.wait(slot_lock, [this] {
+                return active_submit_count_ < max_concurrent_;
+            });
+            ++active_submit_count_;
+        }
+        // RAII guard: decrement counter and wake waiting submits on any return path
+        auto concurrency_guard = std::shared_ptr<void>(
+            reinterpret_cast<void*>(1),
+            [this](void*) {
+                {
+                    std::lock_guard<std::mutex> g(state_mutex_);
+                    if (active_submit_count_ > 0) --active_submit_count_;
+                }
+                concurrency_cv_.notify_all();
+            });
+
         const auto serve_t0 = std::chrono::steady_clock::now();
         const std::string request_id =
             request->request_id().empty() ? make_request_id() : request->request_id();
@@ -464,6 +528,7 @@ public:
         }
 
         LocalQueryResult local_result;
+        const auto local_q_t0 = std::chrono::steady_clock::now();
         try {
             local_result = execute_local_query(engine_, effective_request);
         } catch (const std::exception& ex) {
@@ -471,6 +536,11 @@ public:
             active_cancel_.erase(request_id);
             return ::grpc::Status(::grpc::StatusCode::INVALID_ARGUMENT, ex.what());
         }
+        const double local_q_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - local_q_t0).count();
+        std::cout << "[" << runtime_.node_id << "] local_query_ms=" << local_q_ms
+                  << " request_id=" << request_id
+                  << " query_type=" << effective_request.query_type() << '\n';
 
         double merged_sum = local_result.aggregation_sum;
         std::int64_t merged_count = local_result.aggregation_count;
@@ -488,6 +558,8 @@ public:
         const auto replica_targets = expand_replica_targets();
         std::vector<std::future<ChildCallResult>> futures;
         futures.reserve(replica_targets.size());
+
+        const auto scatter_t0 = std::chrono::steady_clock::now();
         for (const auto& target : replica_targets) {
             auto stub_it = child_stubs_.find(target.replica_id);
             if (stub_it == child_stubs_.end()) {
@@ -549,6 +621,7 @@ public:
                 std::lock_guard<std::mutex> lock(state_mutex_);
                 if (!cancel_flag->load(std::memory_order_acquire)) {
                     chunk_cache_[request_id] = std::move(entry);
+                    fairness_queue_.push_back(request_id);
                 }
             }
 
@@ -613,6 +686,7 @@ public:
                 canceled_ids_.erase(request_id);
             }
 
+            record_completion();
             const double submit_serve_ms = std::chrono::duration<double, std::milli>(
                 std::chrono::steady_clock::now() - serve_t0).count();
             tune_after_chunk_served(submit_serve_ms);
@@ -628,6 +702,11 @@ public:
             }
             child_results.push_back(future.get());
         }
+        const double scatter_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - scatter_t0).count();
+        std::cout << "[" << runtime_.node_id << "] scatter_ms=" << scatter_ms
+                  << " children=" << child_results.size() << '\n';
+
         const ChildMergeResult merged_child = collect_child_merge_result(request_id, child_results);
         if (!cancel_flag->load(std::memory_order_acquire)) {
             merged_sum += merged_child.aggregation_sum;
@@ -705,6 +784,7 @@ public:
             std::lock_guard<std::mutex> lock(state_mutex_);
             if (!cancel_flag->load(std::memory_order_acquire)) {
                 chunk_cache_[request_id] = std::move(entry);
+                fairness_queue_.push_back(request_id);
             }
         }
 
@@ -719,6 +799,7 @@ public:
             canceled_ids_.erase(request_id);
         }
 
+        record_completion();
         const double submit_serve_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - serve_t0).count();
         tune_after_chunk_served(submit_serve_ms);
@@ -739,6 +820,12 @@ public:
         if (canceled_ids_.count(rid) != 0) {
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "request canceled");
         }
+
+        // Round-robin fairness: if multiple requests are queued, only serve the front
+        if (fairness_queue_.size() > 1 && fairness_queue_.front() != rid) {
+            return ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "not your turn, retry");
+        }
+
         auto it = chunk_cache_.find(rid);
         if (it == chunk_cache_.end()) {
             return ::grpc::Status(::grpc::StatusCode::NOT_FOUND, "unknown request_id or chunk");
@@ -766,16 +853,31 @@ public:
         for (const auto& rec : entry.chunks_after_first[slot]) {
             *response->add_records() = rec;
         }
+
+        // Update last access to reset eviction timer
+        it->second.last_access = std::chrono::steady_clock::now();
+
         const bool is_last = entry.finalized && idx == entry.total_chunks - 1;
         response->set_is_last(is_last);
         if (is_last) {
             chunk_cache_.erase(rid);
+            remove_from_fairness_queue(rid);
             std::cout << "[A] request_id=" << rid << " cache evicted after last chunk\n";
+        } else {
+            // Round-robin: move served request to back of fairness queue
+            if (!fairness_queue_.empty() && fairness_queue_.front() == rid) {
+                fairness_queue_.pop_front();
+                fairness_queue_.push_back(rid);
+                std::cout << "[A] fairness round-robin: request_id=" << rid
+                          << " moved to back queue_size=" << fairness_queue_.size() << '\n';
+            }
         }
         lock.unlock();
 
         const double fetch_serve_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - serve_t0).count();
+        std::cout << "[A] chunk_rtt_ms=" << fetch_serve_ms
+                  << " request_id=" << rid << " chunk_index=" << idx << '\n';
         tune_after_chunk_served(fetch_serve_ms);
 
         return ::grpc::Status::OK;
@@ -793,6 +895,7 @@ public:
             it->second->store(true, std::memory_order_release);
         }
         chunk_cache_.erase(rid);
+        remove_from_fairness_queue(rid);
         response->set_acknowledged(true);
         std::cout << "[A] request_id=" << rid << " cancel acknowledged\n";
         return ::grpc::Status::OK;
@@ -1000,15 +1103,78 @@ private:
         }
     }
 
+    void remove_from_fairness_queue(const std::string& rid)
+    {
+        fairness_queue_.erase(
+            std::remove(fairness_queue_.begin(), fairness_queue_.end(), rid),
+            fairness_queue_.end());
+    }
+
+    void record_completion()
+    {
+        const auto now = std::chrono::steady_clock::now();
+        const auto window_dur = std::chrono::seconds(30);
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        while (!completed_requests_window_.empty() &&
+               now - completed_requests_window_.front() > window_dur) {
+            completed_requests_window_.pop_front();
+        }
+        completed_requests_window_.push_back(now);
+        const double rps =
+            static_cast<double>(completed_requests_window_.size()) / 30.0;
+        std::cout << "[" << runtime_.node_id << "] throughput=" << rps
+                  << " req/s (30s window n=" << completed_requests_window_.size() << ")\n";
+    }
+
+    void evict_stale_entries()
+    {
+        const auto now = std::chrono::steady_clock::now();
+        const auto timeout = std::chrono::seconds(chunk_timeout_seconds_);
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for (auto it = chunk_cache_.begin(); it != chunk_cache_.end(); ) {
+            const auto age = std::chrono::duration_cast<std::chrono::seconds>(
+                now - it->second.last_access);
+            if (age >= timeout) {
+                std::cout << "[" << runtime_.node_id << "] evict request_id=" << it->first
+                          << " age=" << age.count() << "s"
+                          << " (timeout=" << chunk_timeout_seconds_ << "s)\n";
+                remove_from_fairness_queue(it->first);
+                canceled_ids_.insert(it->first);
+                it = chunk_cache_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    void run_eviction_loop()
+    {
+        while (!shutdown_.load(std::memory_order_acquire)) {
+            for (int i = 0; i < 5 && !shutdown_.load(std::memory_order_acquire); ++i) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            if (shutdown_.load(std::memory_order_acquire)) break;
+            evict_stale_entries();
+        }
+    }
+
     const NodeRuntime& runtime_;
     taxi::QueryEngine engine_;
     std::unordered_map<std::string, std::unique_ptr<mini2::NodeService::Stub>> child_stubs_;
 
     std::mutex state_mutex_;
+    std::condition_variable concurrency_cv_;
     std::unordered_map<std::string, ChunkCacheEntry> chunk_cache_;
     std::unordered_map<std::string, std::shared_ptr<std::atomic<bool>>> active_cancel_;
     std::unordered_set<std::string> canceled_ids_;
+    std::deque<std::string> fairness_queue_;
+    std::deque<std::chrono::steady_clock::time_point> completed_requests_window_;
     std::atomic<int> dynamic_chunk_size_;
+    int max_concurrent_;
+    int chunk_timeout_seconds_;
+    int active_submit_count_{0};
+    std::thread eviction_thread_;
+    std::atomic<bool> shutdown_{false};
 };
 
 void run_server(const NodeRuntime& runtime) {
@@ -1041,6 +1207,8 @@ int main(int argc, char** argv) {
         std::cout << "  data_file: " << runtime.data_path.string() << '\n';
         std::cout << "  loaded_rows: " << runtime.records.size() << '\n';
         std::cout << "  chunk_size: " << runtime.chunk_size << '\n';
+        std::cout << "  max_concurrent_requests: " << runtime.max_concurrent_requests << '\n';
+        std::cout << "  chunk_timeout_seconds: " << runtime.chunk_timeout_seconds << '\n';
         std::cout << "  stream_up: " << (runtime.stream_up ? "true" : "false") << '\n';
         std::cout << "  bft_mode: " << (runtime.bft_lite ? "lite" : "off") << '\n';
         std::cout << "  children: ";
