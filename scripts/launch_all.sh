@@ -30,7 +30,7 @@ wait_tcp() {
   local host="$1"
   local port="$2"
   local label="${3:-${host}:${port}}"
-  local deadline=$((SECONDS + 45))
+  local deadline=$((SECONDS + 1800))
   while (( SECONDS < deadline )); do
     if { echo >/dev/tcp/${host}/${port}; } >/dev/null 2>&1; then
       return 0

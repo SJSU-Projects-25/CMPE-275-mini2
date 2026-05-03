@@ -16,6 +16,8 @@
 
 namespace {
 
+constexpr int kGrpcMaxMessageBytes = 1800 * 1024 * 1024;
+
 struct ClientOptions {
     std::filesystem::path config_path = "config/topology.json";
     std::string query_type;
@@ -163,14 +165,20 @@ int main(int argc, char** argv) {
         mini2::QueryRequest query;
         fill_query_request(opt, &query);
 
-        auto channel = grpc::CreateChannel(endpoint, grpc::InsecureChannelCredentials());
+        grpc::ChannelArguments channel_args;
+        channel_args.SetMaxSendMessageSize(kGrpcMaxMessageBytes);
+        channel_args.SetMaxReceiveMessageSize(kGrpcMaxMessageBytes);
+        auto channel = grpc::CreateCustomChannel(
+            endpoint,
+            grpc::InsecureChannelCredentials(),
+            channel_args);
         auto stub = mini2::NodeService::NewStub(channel);
 
         const auto t0 = std::chrono::steady_clock::now();
 
         mini2::ChunkResponse first;
         grpc::ClientContext submit_ctx;
-        submit_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(120));
+        submit_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
         const grpc::Status submit_status = stub->SubmitQuery(&submit_ctx, query, &first);
         if (!submit_status.ok()) {
             std::cerr << "SubmitQuery failed: " << submit_status.error_message() << '\n';
@@ -195,7 +203,7 @@ int main(int argc, char** argv) {
 
                 mini2::ChunkResponse chunk;
                 grpc::ClientContext fetch_ctx;
-                fetch_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(120));
+                fetch_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
                 const auto chunk_t0 = std::chrono::steady_clock::now();
                 const grpc::Status fetch_status = stub->FetchChunk(&fetch_ctx, chunk_req, &chunk);
                 const double chunk_rtt = std::chrono::duration<double, std::milli>(

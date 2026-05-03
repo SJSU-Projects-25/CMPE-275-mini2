@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 3.20)
-project(cmpe275_mini2_cpp LANGUAGES CXX)
+project(cmpe275_mini2_cpp LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(APPLE)
+    set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
+    set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+    set(OPENSSL_SSL_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libssl.dylib")
+    set(OPENSSL_CRYPTO_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libcrypto.dylib")
+endif()
+
+find_package(OpenSSL REQUIRED COMPONENTS SSL Crypto)
 find_package(gRPC REQUIRED)
 find_package(nlohmann_json REQUIRED)
 

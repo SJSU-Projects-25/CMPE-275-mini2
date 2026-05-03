@@ -143,3 +143,9 @@ This runs data splitting, C++ configure/build, and placeholder binaries in seque
 For Seth's Part 2 starting point and ownership details, see:
 
 - `docs/HANDOFF_SETH.md`
+
+## Two-Device Run (Mac + Windows)
+
+For a step-by-step two-computer execution guide with exact commands per device, see:
+
+- `docs/TWO_DEVICE_RUN.md`

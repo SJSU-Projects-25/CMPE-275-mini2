@@ -25,6 +25,8 @@ import mini2_pb2_grpc
 from query_engine import QueryEngine
 from trip_record import TripRecord
 
+GRPC_MAX_MESSAGE_BYTES = 1800 * 1024 * 1024
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Mini2 Python node runtime")
@@ -115,12 +117,14 @@ def _derive_neighbors(node_id: str, edges: list[str]) -> list[str]:
 
 
 def _to_int(raw_value: str) -> int:
-    text = raw_value.strip()
+    # Full dataset may include thousands separators (e.g. "12,345").
+    text = raw_value.strip().replace(",", "")
     return int(text) if text else 0
 
 
 def _to_float(raw_value: str) -> float:
-    text = raw_value.strip()
+    # Full dataset may include thousands separators (e.g. "671,100.14").
+    text = raw_value.strip().replace(",", "")
     return float(text) if text else 0.0
 
 
@@ -278,7 +282,13 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         self, child_id: str, request: mini2_pb2.ForwardRequest
     ) -> mini2_pb2.ForwardResponse:
         target = self.context.node_addresses[child_id]
-        with grpc.insecure_channel(target) as channel:
+        with grpc.insecure_channel(
+            target,
+            options=(
+                ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_BYTES),
+                ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_BYTES),
+            ),
+        ) as channel:
             stub = mini2_pb2_grpc.NodeServiceStub(channel)
             child_request = mini2_pb2.ForwardRequest(
                 request_id=request.request_id,
@@ -286,7 +296,7 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                 query=request.query,
                 bft_meta=request.bft_meta,
             )
-            return stub.ForwardQuery(child_request, timeout=10.0)
+            return stub.ForwardQuery(child_request, timeout=1800.0)
 
     @staticmethod
     def _build_payload_hash(response: mini2_pb2.ForwardResponse) -> str:
@@ -522,7 +532,11 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
 def serve(context: NodeContext) -> None:
     server = grpc.server(
         ThreadPoolExecutor(max_workers=16),
-        options=(("grpc.so_reuseport", 0),),
+        options=(
+            ("grpc.so_reuseport", 0),
+            ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_BYTES),
+            ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_BYTES),
+        ),
     )
     mini2_pb2_grpc.add_NodeServiceServicer_to_server(NodeService(context), server)
     bind_target = f"{context.host}:{context.port}"

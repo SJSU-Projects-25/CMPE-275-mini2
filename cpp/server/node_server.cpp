@@ -31,6 +31,8 @@
 
 namespace {
 
+constexpr int kGrpcMaxMessageBytes = 1800 * 1024 * 1024;
+
 struct CliOptions {
     std::string node_id;
     std::filesystem::path config_path;
@@ -42,7 +44,7 @@ struct NodeRuntime {
     int port = 0;
     int chunk_size = 500;
     int max_concurrent_requests = 5;
-    int chunk_timeout_seconds = 30;
+    int chunk_timeout_seconds = 1800;
     bool stream_up = false;
     bool bft_lite = false;
     int bft_fault_threshold = 1;
@@ -474,8 +476,14 @@ public:
             if (endpoint_it == runtime_.endpoints.end()) {
                 continue;
             }
+            grpc::ChannelArguments channel_args;
+            channel_args.SetMaxSendMessageSize(kGrpcMaxMessageBytes);
+            channel_args.SetMaxReceiveMessageSize(kGrpcMaxMessageBytes);
             child_stubs_[target_id] = mini2::NodeService::NewStub(
-                grpc::CreateChannel(endpoint_it->second, grpc::InsecureChannelCredentials()));
+                grpc::CreateCustomChannel(
+                    endpoint_it->second,
+                    grpc::InsecureChannelCredentials(),
+                    channel_args));
         }
 
         shutdown_.store(false, std::memory_order_relaxed);
@@ -579,7 +587,7 @@ public:
                 result.logical_child_id = target.logical_child_id;
                 result.replica_id = target.replica_id;
                 ::grpc::ClientContext client_ctx;
-                client_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
+                client_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
                 result.status = stub->ForwardQuery(&client_ctx, forward_request, &result.response);
                 return result;
             }));
@@ -770,6 +778,7 @@ public:
             entry.aggregation_avg = merged_avg;
             entry.aggregation_count = merged_count;
             entry.finalized = true;
+            entry.last_access = std::chrono::steady_clock::now();
             entry.chunks_after_first.reserve(static_cast<std::size_t>(total_chunks - 1));
             for (std::int32_t c = 1; c < total_chunks; ++c) {
                 const int start = static_cast<int>(c) * chunk_sz;
@@ -1181,6 +1190,8 @@ void run_server(const NodeRuntime& runtime) {
     NodeServiceImpl service(runtime);
     grpc::ServerBuilder builder;
     builder.AddChannelArgument("grpc.so_reuseport", 0);
+    builder.SetMaxSendMessageSize(kGrpcMaxMessageBytes);
+    builder.SetMaxReceiveMessageSize(kGrpcMaxMessageBytes);
     const std::string listen_addr = runtime.host + ":" + std::to_string(runtime.port);
     builder.AddListeningPort(listen_addr, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
