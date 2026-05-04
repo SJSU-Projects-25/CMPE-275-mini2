@@ -1,151 +1,131 @@
-# CMPE-275-mini2
+# CMPE-275 Mini 2
 
-Multi-processes using request/cache controls.
+A 9-node distributed scatter-gather query system over NYC TLC yellow taxi trip data. Clients submit range queries to a C++ entry node (A); A fans out to its subtree over gRPC, each node filters its local CSV partition, and results are merged and returned to the client in chunks.
 
-## Foundation Status (Ashish Part 1)
-
-Implemented:
-
-- Project scaffold (`proto/`, `config/`, `cpp/`, `python/`, `data/`, `scripts/`)
-- Mini1 asset import for data model + parser + query core
-- Tightened `TripRecord` and `TripDataSoA` field types
-- `sizeof` / `offsetof` layout report in `docs/TRIPRECORD_LAYOUT.md`
-- Mini2 gRPC contract in `proto/mini2.proto`
-- Generated Python/C++ protobuf and gRPC stubs
-- Tree overlay config in `config/topology.json`
-- CSV partition utility `scripts/split_data.py` (A..I disjoint splits)
-- C++ build system (`cpp/CMakeLists.txt`) with gRPC/protobuf/json linkage
-
-## Repo Layout
+## Topology
 
 ```
-CMPE-275-mini2/
-├── proto/
-│   └── mini2.proto
-├── config/
-│   └── topology.json
-├── cpp/
-│   ├── CMakeLists.txt
-│   ├── mini2.pb.{h,cc}
-│   ├── mini2.grpc.pb.{h,cc}
-│   ├── server/node_server.cpp
-│   ├── client/client.cpp
-│   ├── include/taxi/
-│   └── src/
-├── python/
-│   ├── mini2_pb2.py
-│   ├── mini2_pb2_grpc.py
-│   ├── query_engine.py
-│   ├── trip_record.py
-│   └── server/
-├── data/
-│   ├── test_sample.csv
-│   └── partition_[A-I].csv
-├── scripts/
-│   └── split_data.py
-└── docs/
-    └── TRIPRECORD_LAYOUT.md
+A (C++) -- entry node
+├── B (Python)
+│   ├── C (Python)
+│   └── D (Python)
+│       ├── E (Python)
+│       └── F (Python)
+├── G (Python)
+├── H (Python)
+└── I (Python)
 ```
+
+Edges and port assignments are defined in `config/topology.json`. Each node loads its own `data/partition_<ID>.csv`.
+
+## Query types
+
+| Type | Filter |
+|------|--------|
+| `distance` | trip_distance in [min, max] miles |
+| `fare` | fare_amount in [min, max] dollars |
+| `time` | pickup_timestamp in [start, end] Unix seconds |
+| `location` | PULocationID in [min, max] |
+| `combined` | time + distance + passenger count ranges |
+| `aggregate` | time range, returns sum/count/avg of fare_amount |
 
 ## Dependencies
 
-### Python
-
-Recommended project-local environment:
+### macOS
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install grpcio grpcio-tools
+brew install grpc protobuf nlohmann-json cmake
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-### C++ (macOS)
+### Linux
 
 ```bash
-brew install grpc protobuf nlohmann-json
+sudo apt install -y libgrpc++-dev protobuf-compiler-grpc nlohmann-json3-dev cmake
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-### C++ (Linux)
+Python 3.12 is required (grpcio wheels are not available for 3.13+).
 
-```bash
-sudo apt install -y libgrpc++-dev protobuf-compiler-grpc nlohmann-json3-dev
-```
-
-## Regenerate gRPC Stubs
-
-### Python
-
-```bash
-. .venv/bin/activate
-python -m grpc_tools.protoc \
-  -I proto/ \
-  --python_out=python/ \
-  --grpc_python_out=python/ \
-  proto/mini2.proto
-```
-
-### C++
-
-```bash
-protoc -I proto/ \
-  --cpp_out=cpp/ \
-  --grpc_out=cpp/ \
-  --plugin=protoc-gen-grpc=$(which grpc_cpp_plugin) \
-  proto/mini2.proto
-```
-
-## Partition Test Data
-
-```bash
-python3 scripts/split_data.py --input data/test_sample.csv --output-dir data
-```
-
-This writes 9 disjoint files:
-
-- `data/partition_A.csv` ... `data/partition_I.csv`
-
-## Build C++ Targets
+## Build
 
 ```bash
 cmake -S cpp -B cpp/build
 cmake --build cpp/build
 ```
 
-Outputs:
+Produces `cpp/build/node_server` and `cpp/build/client`.
 
-- `cpp/build/node_server`
-- `cpp/build/client`
+## Data
 
-## Smoke Test
+Split the CSV into 9 node partitions:
 
-**Full tree:** Python nodes B–I, C++ entry A, one client query, then teardown.
+```bash
+.venv/bin/python scripts/split_data.py --input data/test_sample.csv --output-dir data
+```
 
-Requires `.venv` with `requirements.txt` installed and C++ binaries built.
+## Run
+
+### Single machine
 
 ```bash
 bash scripts/launch_all.sh
-# optional: bash scripts/launch_all.sh --build
-# optional: bash scripts/launch_all.sh -- --config config/topology.json --query-type aggregate
+# with build step:
+bash scripts/launch_all.sh --build
+# custom query:
+bash scripts/launch_all.sh -- --config config/topology.json --query-type aggregate --start-time 1577836800 --end-time 1580515200
 ```
 
-**Manual (two terminals):** start Python workers (`bash scripts/launch_python_nodes.sh`), then `./cpp/build/node_server --id A`, then `./cpp/build/client --config config/topology.json --query-type distance --min 0 --max 10000`. Stop workers with `bash scripts/stop_python_nodes.sh`.
+This starts all Python nodes (B-I), then C++ node A, runs one client query, and shuts everything down.
 
-## One-Command Foundation Demo
+### Two machines
+
+Update `config/topology.json` with the real IP addresses of each machine, then:
+
+Machine 1 (nodes A, B, D, H):
+```bash
+bash scripts/launch_blue.sh
+```
+
+Machine 2 (nodes C, E, F, G, I):
+```bash
+bash scripts/launch_yellow.sh
+```
+
+### Manual
 
 ```bash
-bash scripts/run_foundation_demo.sh
+# Terminal 1
+bash scripts/launch_python_nodes.sh
+
+# Terminal 2
+./cpp/build/node_server --id A --config config/topology.json
+
+# Terminal 3
+./cpp/build/client --config config/topology.json --query-type distance --min 0 --max 10000
+
+# Teardown
+bash scripts/stop_python_nodes.sh
 ```
 
-This runs data splitting, C++ configure/build, and placeholder binaries in sequence.
+## Concurrency test
 
-## Handoff Document
+```bash
+bash scripts/test_concurrent.sh
+```
 
-For Seth's Part 2 starting point and ownership details, see:
+Fires 3 parallel queries (fare, distance, time) and reports results from each.
 
-- `docs/HANDOFF_SETH.md`
+## Configuration reference
 
-## Two-Device Run (Mac + Windows)
+Key fields in `config/topology.json` per node:
 
-For a step-by-step two-computer execution guide with exact commands per device, see:
-
-- `docs/TWO_DEVICE_RUN.md`
+| Field | Description |
+|-------|-------------|
+| `chunk_size` | Records per chunk delivered to client |
+| `max_concurrent_requests` | Concurrency cap at entry node |
+| `chunk_timeout_seconds` | Idle chunk eviction timeout |
+| `stream_up` | Return chunk 0 immediately before child results arrive |
+| `bft_mode` | `"lite"` enables payload hash + quorum verification |

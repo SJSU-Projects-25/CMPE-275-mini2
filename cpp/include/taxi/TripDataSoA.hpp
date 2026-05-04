@@ -9,7 +9,7 @@
 namespace taxi {
 
 /**
- * @brief Object-of-Arrays (SoA) layout for trip data — Phase 3.
+ * @brief Object-of-Arrays (SoA) layout for trip data.
  *
  * Instead of std::vector<TripRecord> (Array-of-Structs / AoS), each field is
  * stored in its own contiguous typed std::vector<T>.
