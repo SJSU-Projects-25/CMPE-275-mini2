@@ -224,3 +224,124 @@ class NodeService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class MgmtServiceStub(object):
+    """MgmtService is a separate logical channel for status and heartbeat,
+    keeping management traffic out of the data service queue.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.GetStatus = channel.unary_unary(
+                '/mini2.MgmtService/GetStatus',
+                request_serializer=mini2__pb2.StatusRequest.SerializeToString,
+                response_deserializer=mini2__pb2.StatusResponse.FromString,
+                _registered_method=True)
+        self.Heartbeat = channel.unary_unary(
+                '/mini2.MgmtService/Heartbeat',
+                request_serializer=mini2__pb2.HeartbeatRequest.SerializeToString,
+                response_deserializer=mini2__pb2.HeartbeatResponse.FromString,
+                _registered_method=True)
+
+
+class MgmtServiceServicer(object):
+    """MgmtService is a separate logical channel for status and heartbeat,
+    keeping management traffic out of the data service queue.
+    """
+
+    def GetStatus(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Heartbeat(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_MgmtServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'GetStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStatus,
+                    request_deserializer=mini2__pb2.StatusRequest.FromString,
+                    response_serializer=mini2__pb2.StatusResponse.SerializeToString,
+            ),
+            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+                    servicer.Heartbeat,
+                    request_deserializer=mini2__pb2.HeartbeatRequest.FromString,
+                    response_serializer=mini2__pb2.HeartbeatResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'mini2.MgmtService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('mini2.MgmtService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class MgmtService(object):
+    """MgmtService is a separate logical channel for status and heartbeat,
+    keeping management traffic out of the data service queue.
+    """
+
+    @staticmethod
+    def GetStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mini2.MgmtService/GetStatus',
+            mini2__pb2.StatusRequest.SerializeToString,
+            mini2__pb2.StatusResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Heartbeat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mini2.MgmtService/Heartbeat',
+            mini2__pb2.HeartbeatRequest.SerializeToString,
+            mini2__pb2.HeartbeatResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

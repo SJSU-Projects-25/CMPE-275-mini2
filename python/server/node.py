@@ -529,7 +529,47 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         return mini2_pb2.CancelResponse(acknowledged=False)
 
 
+class MgmtService(mini2_pb2_grpc.MgmtServiceServicer):
+    """Management channel: status and heartbeat, separate from data RPCs.
+
+    Separating management traffic from the data service queue prevents
+    status/heartbeat messages from being delayed behind bulk data transfers
+    (concepts-stealing lecture: 'Separate ports — Data and mgmt channels').
+    """
+
+    def __init__(self, context: NodeContext, start_time: float) -> None:
+        self._ctx = context
+        self._start_time = start_time
+
+    def GetStatus(
+        self, request: mini2_pb2.StatusRequest, _rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.StatusResponse:
+        uptime = int(time.time() - self._start_time)
+        return mini2_pb2.StatusResponse(
+            node_id=self._ctx.node_id,
+            active_requests=0,   # Python workers are stateless per-RPC
+            pending_chunks=0,
+            fairness_queue_depth=0,
+            throughput_rps=0.0,
+            uptime_seconds=uptime,
+        )
+
+    def Heartbeat(
+        self, request: mini2_pb2.HeartbeatRequest, _rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.HeartbeatResponse:
+        print(
+            f"[{self._ctx.node_id}][MGMT] heartbeat from {request.sender_id}",
+            flush=True,
+        )
+        return mini2_pb2.HeartbeatResponse(
+            node_id=self._ctx.node_id,
+            timestamp_ms=int(time.time() * 1000),
+            alive=True,
+        )
+
+
 def serve(context: NodeContext) -> None:
+    start_time = time.time()
     server = grpc.server(
         ThreadPoolExecutor(max_workers=16),
         options=(
@@ -539,6 +579,9 @@ def serve(context: NodeContext) -> None:
         ),
     )
     mini2_pb2_grpc.add_NodeServiceServicer_to_server(NodeService(context), server)
+    mini2_pb2_grpc.add_MgmtServiceServicer_to_server(
+        MgmtService(context, start_time), server
+    )
     bind_target = f"{context.host}:{context.port}"
     bound_port = server.add_insecure_port(bind_target)
     if bound_port == 0:

@@ -106,9 +106,42 @@ message CancelResponse {
   bool acknowledged = 1;
 }
 
+// ---- Management channel (separate from data RPCs) ----
+
+message StatusRequest {
+  string requester_id = 1;
+}
+
+message StatusResponse {
+  string node_id = 1;
+  int32  active_requests      = 2;  // SubmitQuery calls in flight
+  int32  pending_chunks       = 3;  // entries sitting in chunk cache
+  int32  fairness_queue_depth = 4;  // requests in round-robin queue
+  double throughput_rps       = 5;  // completions in last 30s / 30
+  int64  uptime_seconds       = 6;
+}
+
+message HeartbeatRequest {
+  string sender_id    = 1;
+  int64  timestamp_ms = 2;
+}
+
+message HeartbeatResponse {
+  string node_id      = 1;
+  int64  timestamp_ms = 2;
+  bool   alive        = 3;
+}
+
 service NodeService {
   rpc SubmitQuery(QueryRequest) returns (ChunkResponse);
   rpc FetchChunk(ChunkRequest) returns (ChunkResponse);
   rpc ForwardQuery(ForwardRequest) returns (ForwardResponse);
   rpc CancelQuery(CancelRequest) returns (CancelResponse);
+}
+
+// MgmtService is a separate logical channel for status and heartbeat,
+// keeping management traffic out of the data service queue.
+service MgmtService {
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }

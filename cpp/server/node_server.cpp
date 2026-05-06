@@ -1171,7 +1171,7 @@ private:
     taxi::QueryEngine engine_;
     std::unordered_map<std::string, std::unique_ptr<mini2::NodeService::Stub>> child_stubs_;
 
-    std::mutex state_mutex_;
+    mutable std::mutex state_mutex_;
     std::condition_variable concurrency_cv_;
     std::unordered_map<std::string, ChunkCacheEntry> chunk_cache_;
     std::unordered_map<std::string, std::shared_ptr<std::atomic<bool>>> active_cancel_;
@@ -1184,17 +1184,87 @@ private:
     int active_submit_count_{0};
     std::thread eviction_thread_;
     std::atomic<bool> shutdown_{false};
+    std::chrono::steady_clock::time_point start_time_ = std::chrono::steady_clock::now();
+
+public:
+    struct StatusSnapshot {
+        int active_requests;
+        int pending_chunks;
+        int fairness_queue_depth;
+        double throughput_rps;
+        int64_t uptime_seconds;
+    };
+
+    StatusSnapshot get_status_snapshot() const {
+        std::unique_lock<std::mutex> lk(state_mutex_);
+        const int active  = active_submit_count_;
+        const int pending = static_cast<int>(chunk_cache_.size());
+        const int fq_depth = static_cast<int>(fairness_queue_.size());
+        const auto now = std::chrono::steady_clock::now();
+        // count completions in last 30 seconds
+        const auto window_start = now - std::chrono::seconds(30);
+        int recent = 0;
+        for (const auto& tp : completed_requests_window_) {
+            if (tp >= window_start) ++recent;
+        }
+        lk.unlock();
+        const double rps = recent / 30.0;
+        const int64_t uptime = std::chrono::duration_cast<std::chrono::seconds>(
+            now - start_time_).count();
+        return {active, pending, fq_depth, rps, uptime};
+    }
+};
+
+// Management channel: separate service for status and heartbeat.
+// Keeps management traffic out of the data service queue (concepts-stealing lecture:
+// "Separate ports (channels) - Data and mgmt channels (HPC design)").
+class MgmtServiceImpl final : public mini2::MgmtService::Service {
+public:
+    explicit MgmtServiceImpl(const std::string& node_id,
+                             const NodeServiceImpl& data_svc)
+        : node_id_(node_id), data_svc_(data_svc) {}
+
+    grpc::Status GetStatus(grpc::ServerContext* /*ctx*/,
+                           const mini2::StatusRequest* /*req*/,
+                           mini2::StatusResponse* resp) override {
+        const auto snap = data_svc_.get_status_snapshot();
+        resp->set_node_id(node_id_);
+        resp->set_active_requests(snap.active_requests);
+        resp->set_pending_chunks(snap.pending_chunks);
+        resp->set_fairness_queue_depth(snap.fairness_queue_depth);
+        resp->set_throughput_rps(snap.throughput_rps);
+        resp->set_uptime_seconds(snap.uptime_seconds);
+        return grpc::Status::OK;
+    }
+
+    grpc::Status Heartbeat(grpc::ServerContext* /*ctx*/,
+                           const mini2::HeartbeatRequest* req,
+                           mini2::HeartbeatResponse* resp) override {
+        resp->set_node_id(node_id_);
+        resp->set_timestamp_ms(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
+        resp->set_alive(true);
+        std::cout << "[" << node_id_ << "][MGMT] heartbeat from " << req->sender_id() << '\n';
+        return grpc::Status::OK;
+    }
+
+private:
+    std::string node_id_;
+    const NodeServiceImpl& data_svc_;
 };
 
 void run_server(const NodeRuntime& runtime) {
     NodeServiceImpl service(runtime);
+    MgmtServiceImpl mgmt_service(runtime.node_id, service);
     grpc::ServerBuilder builder;
     builder.AddChannelArgument("grpc.so_reuseport", 0);
     builder.SetMaxSendMessageSize(kGrpcMaxMessageBytes);
     builder.SetMaxReceiveMessageSize(kGrpcMaxMessageBytes);
     const std::string listen_addr = runtime.host + ":" + std::to_string(runtime.port);
     builder.AddListeningPort(listen_addr, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
+    builder.RegisterService(&service);       // data channel
+    builder.RegisterService(&mgmt_service);  // management channel
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     if (!server) {
         throw std::runtime_error("Failed to start gRPC server on " + listen_addr);

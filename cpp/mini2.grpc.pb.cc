@@ -209,6 +209,109 @@ NodeService::Service::~Service() {
 }
 
 
+static const char* MgmtService_method_names[] = {
+  "/mini2.MgmtService/GetStatus",
+  "/mini2.MgmtService/Heartbeat",
+};
+
+std::unique_ptr< MgmtService::Stub> MgmtService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
+  (void)options;
+  std::unique_ptr< MgmtService::Stub> stub(new MgmtService::Stub(channel, options));
+  return stub;
+}
+
+MgmtService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_GetStatus_(MgmtService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Heartbeat_(MgmtService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  {}
+
+::grpc::Status MgmtService::Stub::GetStatus(::grpc::ClientContext* context, const ::mini2::StatusRequest& request, ::mini2::StatusResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::mini2::StatusRequest, ::mini2::StatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetStatus_, context, request, response);
+}
+
+void MgmtService::Stub::async::GetStatus(::grpc::ClientContext* context, const ::mini2::StatusRequest* request, ::mini2::StatusResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mini2::StatusRequest, ::mini2::StatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetStatus_, context, request, response, std::move(f));
+}
+
+void MgmtService::Stub::async::GetStatus(::grpc::ClientContext* context, const ::mini2::StatusRequest* request, ::mini2::StatusResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetStatus_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::StatusResponse>* MgmtService::Stub::PrepareAsyncGetStatusRaw(::grpc::ClientContext* context, const ::mini2::StatusRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mini2::StatusResponse, ::mini2::StatusRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetStatus_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::StatusResponse>* MgmtService::Stub::AsyncGetStatusRaw(::grpc::ClientContext* context, const ::mini2::StatusRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetStatusRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status MgmtService::Stub::Heartbeat(::grpc::ClientContext* context, const ::mini2::HeartbeatRequest& request, ::mini2::HeartbeatResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::mini2::HeartbeatRequest, ::mini2::HeartbeatResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Heartbeat_, context, request, response);
+}
+
+void MgmtService::Stub::async::Heartbeat(::grpc::ClientContext* context, const ::mini2::HeartbeatRequest* request, ::mini2::HeartbeatResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mini2::HeartbeatRequest, ::mini2::HeartbeatResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Heartbeat_, context, request, response, std::move(f));
+}
+
+void MgmtService::Stub::async::Heartbeat(::grpc::ClientContext* context, const ::mini2::HeartbeatRequest* request, ::mini2::HeartbeatResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Heartbeat_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::HeartbeatResponse>* MgmtService::Stub::PrepareAsyncHeartbeatRaw(::grpc::ClientContext* context, const ::mini2::HeartbeatRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mini2::HeartbeatResponse, ::mini2::HeartbeatRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Heartbeat_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::HeartbeatResponse>* MgmtService::Stub::AsyncHeartbeatRaw(::grpc::ClientContext* context, const ::mini2::HeartbeatRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHeartbeatRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+MgmtService::Service::Service() {
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      MgmtService_method_names[0],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< MgmtService::Service, ::mini2::StatusRequest, ::mini2::StatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MgmtService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mini2::StatusRequest* req,
+             ::mini2::StatusResponse* resp) {
+               return service->GetStatus(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      MgmtService_method_names[1],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< MgmtService::Service, ::mini2::HeartbeatRequest, ::mini2::HeartbeatResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MgmtService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mini2::HeartbeatRequest* req,
+             ::mini2::HeartbeatResponse* resp) {
+               return service->Heartbeat(ctx, req, resp);
+             }, this)));
+}
+
+MgmtService::Service::~Service() {
+}
+
+::grpc::Status MgmtService::Service::GetStatus(::grpc::ServerContext* context, const ::mini2::StatusRequest* request, ::mini2::StatusResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status MgmtService::Service::Heartbeat(::grpc::ServerContext* context, const ::mini2::HeartbeatRequest* request, ::mini2::HeartbeatResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+
 }  // namespace mini2
 #include <grpcpp/ports_undef.inc>
 
