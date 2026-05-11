@@ -338,37 +338,43 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
 
     @staticmethod
     def _build_payload_hash(response: mini2_pb2.ForwardResponse) -> str:
-        payload = [
-            response.request_id,
-            response.source_node,
-            f"{response.aggregation_sum}",
-            f"{response.aggregation_avg}",
-            f"{response.aggregation_count}",
-            f"{len(response.records)}",
-        ]
+        # Stream hashing to avoid constructing massive intermediate strings/lists
+        # when responses contain millions of records.
+        hasher = hashlib.sha256()
+        first_token = True
+
+        def push(token: str) -> None:
+            nonlocal first_token
+            if not first_token:
+                hasher.update(b"|")
+            hasher.update(token.encode("utf-8"))
+            first_token = False
+
+        push(response.request_id)
+        push(response.source_node)
+        push(f"{response.aggregation_sum}")
+        push(f"{response.aggregation_avg}")
+        push(f"{response.aggregation_count}")
+        push(f"{len(response.records)}")
         for rec in response.records:
-            payload.extend(
-                [
-                    str(rec.vendor_id),
-                    str(rec.pickup_timestamp),
-                    str(rec.dropoff_timestamp),
-                    str(rec.passenger_count),
-                    str(rec.trip_distance),
-                    str(rec.rate_code_id),
-                    str(int(rec.store_and_fwd_flag)),
-                    str(rec.pu_location_id),
-                    str(rec.do_location_id),
-                    str(rec.payment_type),
-                    str(rec.fare_amount),
-                    str(rec.extra),
-                    str(rec.mta_tax),
-                    str(rec.tip_amount),
-                    str(rec.tolls_amount),
-                    str(rec.improvement_surcharge),
-                    str(rec.total_amount),
-                ]
-            )
-        return hashlib.sha256("|".join(payload).encode("utf-8")).hexdigest()
+            push(str(rec.vendor_id))
+            push(str(rec.pickup_timestamp))
+            push(str(rec.dropoff_timestamp))
+            push(str(rec.passenger_count))
+            push(str(rec.trip_distance))
+            push(str(rec.rate_code_id))
+            push(str(int(rec.store_and_fwd_flag)))
+            push(str(rec.pu_location_id))
+            push(str(rec.do_location_id))
+            push(str(rec.payment_type))
+            push(str(rec.fare_amount))
+            push(str(rec.extra))
+            push(str(rec.mta_tax))
+            push(str(rec.tip_amount))
+            push(str(rec.tolls_amount))
+            push(str(rec.improvement_surcharge))
+            push(str(rec.total_amount))
+        return hasher.hexdigest()
 
     def _attach_bft_meta(self, response: mini2_pb2.ForwardResponse) -> mini2_pb2.ForwardResponse:
         if self.context.bft_mode != "lite":
@@ -520,7 +526,7 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
             return mini2_pb2.ForwardResponse()
         response = maybe_faulted
 
-        all_records = list(response.records)
+        all_records = response.records
         total = len(all_records)
         chunk_size = self.context.chunk_size
         total_chunks = max(1, (total + chunk_size - 1) // chunk_size)

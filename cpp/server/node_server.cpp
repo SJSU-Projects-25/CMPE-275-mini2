@@ -624,6 +624,10 @@ public:
                 return result;
             }));
         }
+        std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                  << " fan-out started children=" << futures.size()
+                  << " timeout_s=" << forward_timeout_seconds
+                  << " stream_up=" << (runtime_.stream_up ? "true" : "false") << '\n';
 
         if (runtime_.stream_up) {
             const int chunk_sz = dynamic_chunk_size_.load(std::memory_order_relaxed);
@@ -674,15 +678,19 @@ public:
                 std::thread([this, request_id, cancel_flag, query_type = effective_request.query_type(),
                              first_chunk_count = static_cast<std::int64_t>(first_end),
                              first_chunk_fare_sum,
+                             scatter_t0,
                              futures = std::move(futures)]() mutable {
-                    std::vector<ChildCallResult> child_results;
-                    child_results.reserve(futures.size());
-                    for (auto& future : futures) {
-                        if (cancel_flag->load(std::memory_order_acquire)) {
-                            return;
-                        }
-                        child_results.push_back(future.get());
+                    std::vector<ChildCallResult> child_results = collect_child_results_with_progress(
+                        request_id, std::move(futures), cancel_flag);
+                    if (cancel_flag->load(std::memory_order_acquire)) {
+                        return;
                     }
+                    const double scatter_ms = std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - scatter_t0).count();
+                    std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                              << " scatter_ms=" << scatter_ms
+                              << " children=" << child_results.size()
+                              << " (stream-up background)\n";
                     const ChildMergeResult merged_child = collect_child_merge_result(request_id, child_results);
 
                     std::lock_guard<std::mutex> lock(state_mutex_);
@@ -733,15 +741,8 @@ public:
             return ::grpc::Status::OK;
         }
 
-        std::cout << "[A] request_id=" << request_id << " fan-out children=" << replica_targets.size() << '\n';
-        std::vector<ChildCallResult> child_results;
-        child_results.reserve(futures.size());
-        for (auto& future : futures) {
-            if (cancel_flag->load(std::memory_order_acquire)) {
-                break;
-            }
-            child_results.push_back(future.get());
-        }
+        std::vector<ChildCallResult> child_results = collect_child_results_with_progress(
+            request_id, std::move(futures), cancel_flag);
         const double scatter_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - scatter_t0).count();
         std::cout << "[" << runtime_.node_id << "] scatter_ms=" << scatter_ms
@@ -966,6 +967,91 @@ private:
             }
         }
         return out;
+    }
+
+    std::vector<ChildCallResult> collect_child_results_with_progress(
+        const std::string& request_id,
+        std::vector<std::future<ChildCallResult>> futures,
+        const std::shared_ptr<std::atomic<bool>>& cancel_flag) const
+    {
+        std::vector<ChildCallResult> child_results;
+        child_results.reserve(futures.size());
+        if (futures.empty()) {
+            return child_results;
+        }
+
+        constexpr auto kProgressLogInterval = std::chrono::seconds(5);
+        constexpr auto kProgressPollSleep = std::chrono::milliseconds(100);
+
+        const auto wait_t0 = std::chrono::steady_clock::now();
+        auto next_progress_log = wait_t0 + kProgressLogInterval;
+        std::vector<bool> done(futures.size(), false);
+        std::size_t completed = 0;
+
+        while (completed < futures.size()) {
+            if (cancel_flag && cancel_flag->load(std::memory_order_acquire)) {
+                std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                          << " fan-out wait aborted by cancel"
+                          << " completed=" << completed
+                          << "/" << futures.size() << '\n';
+                return child_results;
+            }
+
+            bool made_progress = false;
+            for (std::size_t i = 0; i < futures.size(); ++i) {
+                if (done[i]) {
+                    continue;
+                }
+                if (futures[i].wait_for(std::chrono::milliseconds(0)) != std::future_status::ready) {
+                    continue;
+                }
+
+                ChildCallResult result = futures[i].get();
+                done[i] = true;
+                ++completed;
+                made_progress = true;
+                const double elapsed_ms = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - wait_t0).count();
+                if (result.status.ok()) {
+                    std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                              << " child=" << result.replica_id
+                              << " completed " << completed << "/" << futures.size()
+                              << " elapsed_ms=" << elapsed_ms
+                              << " records=" << result.response.records_size()
+                              << " is_last=" << (result.response.is_last() ? "true" : "false")
+                              << '\n';
+                } else {
+                    std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                              << " child=" << result.replica_id
+                              << " failed " << completed << "/" << futures.size()
+                              << " elapsed_ms=" << elapsed_ms
+                              << " status_code=" << result.status.error_code()
+                              << " error=" << result.status.error_message() << '\n';
+                }
+                child_results.push_back(std::move(result));
+            }
+
+            if (completed >= futures.size()) {
+                break;
+            }
+
+            const auto now = std::chrono::steady_clock::now();
+            if (now >= next_progress_log) {
+                const double elapsed_ms = std::chrono::duration<double, std::milli>(
+                    now - wait_t0).count();
+                std::cout << "[" << runtime_.node_id << "] request_id=" << request_id
+                          << " waiting_for_children completed=" << completed
+                          << "/" << futures.size()
+                          << " pending=" << (futures.size() - completed)
+                          << " elapsed_ms=" << elapsed_ms << '\n';
+                next_progress_log = now + kProgressLogInterval;
+            }
+
+            if (!made_progress) {
+                std::this_thread::sleep_for(kProgressPollSleep);
+            }
+        }
+        return child_results;
     }
 
     bool verify_bft_metadata(
