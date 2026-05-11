@@ -19,6 +19,8 @@ PYTHON_DIR = Path(__file__).resolve().parents[1]
 if str(PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(PYTHON_DIR))
 
+import threading
+
 import grpc
 import mini2_pb2
 import mini2_pb2_grpc
@@ -277,6 +279,10 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
     def __init__(self, context: NodeContext) -> None:
         self.context = context
         self.engine = QueryEngine(context.records)
+        # Cache for chunked ForwardResponse payloads, keyed by request_id.
+        # Entries are removed when the last chunk is served.
+        self._fwd_cache: dict[str, list[mini2_pb2.TripRecordMsg]] = {}
+        self._fwd_lock = threading.Lock()
 
     def _forward_to_child(
         self, child_id: str, request: mini2_pb2.ForwardRequest
@@ -296,7 +302,30 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                 query=request.query,
                 bft_meta=request.bft_meta,
             )
-            return stub.ForwardQuery(child_request, timeout=1800.0)
+            fwd_resp = stub.ForwardQuery(child_request, timeout=1800.0)
+            if fwd_resp.is_last:
+                return fwd_resp
+            # Chunked response: pull remaining chunks via FetchForwardChunk.
+            all_records = list(fwd_resp.records)
+            for chunk_idx in range(1, fwd_resp.total_chunks):
+                chunk_req = mini2_pb2.ChunkRequest(
+                    request_id=fwd_resp.request_id, chunk_index=chunk_idx
+                )
+                chunk_resp = stub.FetchForwardChunk(chunk_req, timeout=1800.0)
+                all_records.extend(chunk_resp.records)
+                if chunk_resp.is_last:
+                    break
+            return mini2_pb2.ForwardResponse(
+                request_id=fwd_resp.request_id,
+                source_node=fwd_resp.source_node,
+                records=all_records,
+                aggregation_sum=fwd_resp.aggregation_sum,
+                aggregation_avg=fwd_resp.aggregation_avg,
+                aggregation_count=fwd_resp.aggregation_count,
+                bft_meta=fwd_resp.bft_meta,
+                is_last=True,
+                total_chunks=1,
+            )
 
     @staticmethod
     def _build_payload_hash(response: mini2_pb2.ForwardResponse) -> str:
@@ -480,7 +509,65 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         maybe_faulted = self._apply_fault_injection(response, rpc_context)
         if maybe_faulted is None:
             return mini2_pb2.ForwardResponse()
-        return maybe_faulted
+        response = maybe_faulted
+
+        all_records = list(response.records)
+        total = len(all_records)
+        chunk_size = self.context.chunk_size
+        total_chunks = max(1, (total + chunk_size - 1) // chunk_size)
+
+        if total_chunks > 1:
+            with self._fwd_lock:
+                self._fwd_cache[request.request_id] = all_records
+
+        return mini2_pb2.ForwardResponse(
+            request_id=response.request_id,
+            source_node=response.source_node,
+            records=all_records[:chunk_size],
+            aggregation_sum=response.aggregation_sum,
+            aggregation_avg=response.aggregation_avg,
+            aggregation_count=response.aggregation_count,
+            bft_meta=response.bft_meta,
+            is_last=(total_chunks <= 1),
+            total_chunks=total_chunks,
+        )
+
+    def FetchForwardChunk(
+        self, request: mini2_pb2.ChunkRequest, rpc_context: grpc.ServicerContext
+    ) -> mini2_pb2.ChunkResponse:
+        rid = request.request_id
+        chunk_idx = request.chunk_index
+        with self._fwd_lock:
+            if rid not in self._fwd_cache:
+                rpc_context.set_code(grpc.StatusCode.NOT_FOUND)
+                rpc_context.set_details(f"forward chunk cache miss: request_id={rid}")
+                return mini2_pb2.ChunkResponse()
+            all_records = self._fwd_cache[rid]
+
+        chunk_size = self.context.chunk_size
+        total = len(all_records)
+        total_chunks = max(1, (total + chunk_size - 1) // chunk_size)
+
+        if chunk_idx < 0 or chunk_idx >= total_chunks:
+            rpc_context.set_code(grpc.StatusCode.NOT_FOUND)
+            rpc_context.set_details(f"invalid forward chunk_index={chunk_idx}")
+            return mini2_pb2.ChunkResponse()
+
+        start = chunk_idx * chunk_size
+        end = min(start + chunk_size, total)
+        is_last = chunk_idx == total_chunks - 1
+
+        if is_last:
+            with self._fwd_lock:
+                self._fwd_cache.pop(rid, None)
+
+        return mini2_pb2.ChunkResponse(
+            request_id=rid,
+            chunk_index=chunk_idx,
+            total_chunks=total_chunks,
+            is_last=is_last,
+            records=all_records[start:end],
+        )
 
     def SubmitQuery(
         self, request: mini2_pb2.QueryRequest, rpc_context: grpc.ServicerContext

@@ -586,9 +586,38 @@ public:
                 ChildCallResult result;
                 result.logical_child_id = target.logical_child_id;
                 result.replica_id = target.replica_id;
-                ::grpc::ClientContext client_ctx;
-                client_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
-                result.status = stub->ForwardQuery(&client_ctx, forward_request, &result.response);
+                {
+                    ::grpc::ClientContext client_ctx;
+                    client_ctx.set_deadline(
+                        std::chrono::system_clock::now() + std::chrono::seconds(1800));
+                    result.status = stub->ForwardQuery(&client_ctx, forward_request, &result.response);
+                }
+                if (!result.status.ok() || result.response.is_last()) {
+                    return result;
+                }
+                // Chunked forwarding: pull remaining chunks from the child node.
+                const std::string rid = result.response.request_id();
+                const int total_chunks = result.response.total_chunks();
+                for (int chunk_idx = 1; chunk_idx < total_chunks; ++chunk_idx) {
+                    mini2::ChunkRequest chunk_req;
+                    chunk_req.set_request_id(rid);
+                    chunk_req.set_chunk_index(chunk_idx);
+                    mini2::ChunkResponse chunk_resp;
+                    ::grpc::ClientContext fetch_ctx;
+                    fetch_ctx.set_deadline(
+                        std::chrono::system_clock::now() + std::chrono::seconds(1800));
+                    const auto fetch_st = stub->FetchForwardChunk(&fetch_ctx, chunk_req, &chunk_resp);
+                    if (!fetch_st.ok()) {
+                        result.status = fetch_st;
+                        break;
+                    }
+                    for (const auto& rec : chunk_resp.records()) {
+                        result.response.add_records()->CopyFrom(rec);
+                    }
+                    if (chunk_resp.is_last()) {
+                        break;
+                    }
+                }
                 return result;
             }));
         }

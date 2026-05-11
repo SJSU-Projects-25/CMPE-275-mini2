@@ -26,6 +26,7 @@ static const char* NodeService_method_names[] = {
   "/mini2.NodeService/SubmitQuery",
   "/mini2.NodeService/FetchChunk",
   "/mini2.NodeService/ForwardQuery",
+  "/mini2.NodeService/FetchForwardChunk",
   "/mini2.NodeService/CancelQuery",
 };
 
@@ -39,7 +40,8 @@ NodeService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channe
   : channel_(channel), rpcmethod_SubmitQuery_(NodeService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_FetchChunk_(NodeService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ForwardQuery_(NodeService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_CancelQuery_(NodeService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_FetchForwardChunk_(NodeService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CancelQuery_(NodeService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status NodeService::Stub::SubmitQuery(::grpc::ClientContext* context, const ::mini2::QueryRequest& request, ::mini2::ChunkResponse* response) {
@@ -111,6 +113,29 @@ void NodeService::Stub::async::ForwardQuery(::grpc::ClientContext* context, cons
   return result;
 }
 
+::grpc::Status NodeService::Stub::FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::mini2::ChunkResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::mini2::ChunkRequest, ::mini2::ChunkResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_FetchForwardChunk_, context, request, response);
+}
+
+void NodeService::Stub::async::FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mini2::ChunkRequest, ::mini2::ChunkResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FetchForwardChunk_, context, request, response, std::move(f));
+}
+
+void NodeService::Stub::async::FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FetchForwardChunk_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>* NodeService::Stub::PrepareAsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mini2::ChunkResponse, ::mini2::ChunkRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_FetchForwardChunk_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>* NodeService::Stub::AsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncFetchForwardChunkRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::Status NodeService::Stub::CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::mini2::CancelResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::mini2::CancelRequest, ::mini2::CancelResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CancelQuery_, context, request, response);
 }
@@ -168,6 +193,16 @@ NodeService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       NodeService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< NodeService::Service, ::mini2::ChunkRequest, ::mini2::ChunkResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](NodeService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mini2::ChunkRequest* req,
+             ::mini2::ChunkResponse* resp) {
+               return service->FetchForwardChunk(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      NodeService_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< NodeService::Service, ::mini2::CancelRequest, ::mini2::CancelResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](NodeService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -195,6 +230,13 @@ NodeService::Service::~Service() {
 }
 
 ::grpc::Status NodeService::Service::ForwardQuery(::grpc::ServerContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status NodeService::Service::FetchForwardChunk(::grpc::ServerContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response) {
   (void) context;
   (void) request;
   (void) response;

@@ -57,6 +57,14 @@ class NodeService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ForwardResponse>> PrepareAsyncForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ForwardResponse>>(PrepareAsyncForwardQueryRaw(context, request, cq));
     }
+    // Pulls the next chunk of a chunked ForwardResponse (bypasses client fairness queue).
+    virtual ::grpc::Status FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::mini2::ChunkResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>> AsyncFetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>>(AsyncFetchForwardChunkRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>> PrepareAsyncFetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>>(PrepareAsyncFetchForwardChunkRaw(context, request, cq));
+    }
     virtual ::grpc::Status CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::mini2::CancelResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::CancelResponse>> AsyncCancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mini2::CancelResponse>>(AsyncCancelQueryRaw(context, request, cq));
@@ -73,6 +81,9 @@ class NodeService final {
       virtual void FetchChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void ForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void ForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Pulls the next chunk of a chunked ForwardResponse (bypasses client fairness queue).
+      virtual void FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
@@ -86,6 +97,8 @@ class NodeService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>* PrepareAsyncFetchChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ForwardResponse>* AsyncForwardQueryRaw(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ForwardResponse>* PrepareAsyncForwardQueryRaw(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>* AsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::ChunkResponse>* PrepareAsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::CancelResponse>* AsyncCancelQueryRaw(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mini2::CancelResponse>* PrepareAsyncCancelQueryRaw(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
@@ -113,6 +126,13 @@ class NodeService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ForwardResponse>> PrepareAsyncForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ForwardResponse>>(PrepareAsyncForwardQueryRaw(context, request, cq));
     }
+    ::grpc::Status FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::mini2::ChunkResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>> AsyncFetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>>(AsyncFetchForwardChunkRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>> PrepareAsyncFetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>>(PrepareAsyncFetchForwardChunkRaw(context, request, cq));
+    }
     ::grpc::Status CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::mini2::CancelResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::CancelResponse>> AsyncCancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mini2::CancelResponse>>(AsyncCancelQueryRaw(context, request, cq));
@@ -129,6 +149,8 @@ class NodeService final {
       void FetchChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response, std::function<void(::grpc::Status)>) override;
       void ForwardQuery(::grpc::ClientContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, std::function<void(::grpc::Status)>) override;
+      void FetchForwardChunk(::grpc::ClientContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response, std::function<void(::grpc::Status)>) override;
       void CancelQuery(::grpc::ClientContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
@@ -148,11 +170,14 @@ class NodeService final {
     ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>* PrepareAsyncFetchChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mini2::ForwardResponse>* AsyncForwardQueryRaw(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mini2::ForwardResponse>* PrepareAsyncForwardQueryRaw(::grpc::ClientContext* context, const ::mini2::ForwardRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>* AsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::mini2::ChunkResponse>* PrepareAsyncFetchForwardChunkRaw(::grpc::ClientContext* context, const ::mini2::ChunkRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mini2::CancelResponse>* AsyncCancelQueryRaw(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mini2::CancelResponse>* PrepareAsyncCancelQueryRaw(::grpc::ClientContext* context, const ::mini2::CancelRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_SubmitQuery_;
     const ::grpc::internal::RpcMethod rpcmethod_FetchChunk_;
     const ::grpc::internal::RpcMethod rpcmethod_ForwardQuery_;
+    const ::grpc::internal::RpcMethod rpcmethod_FetchForwardChunk_;
     const ::grpc::internal::RpcMethod rpcmethod_CancelQuery_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
@@ -164,6 +189,8 @@ class NodeService final {
     virtual ::grpc::Status SubmitQuery(::grpc::ServerContext* context, const ::mini2::QueryRequest* request, ::mini2::ChunkResponse* response);
     virtual ::grpc::Status FetchChunk(::grpc::ServerContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response);
     virtual ::grpc::Status ForwardQuery(::grpc::ServerContext* context, const ::mini2::ForwardRequest* request, ::mini2::ForwardResponse* response);
+    // Pulls the next chunk of a chunked ForwardResponse (bypasses client fairness queue).
+    virtual ::grpc::Status FetchForwardChunk(::grpc::ServerContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response);
     virtual ::grpc::Status CancelQuery(::grpc::ServerContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response);
   };
   template <class BaseClass>
@@ -227,12 +254,32 @@ class NodeService final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodAsync(3);
+    }
+    ~WithAsyncMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestFetchForwardChunk(::grpc::ServerContext* context, ::mini2::ChunkRequest* request, ::grpc::ServerAsyncResponseWriter< ::mini2::ChunkResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(4);
     }
     ~WithAsyncMethod_CancelQuery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -243,10 +290,10 @@ class NodeService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCancelQuery(::grpc::ServerContext* context, ::mini2::CancelRequest* request, ::grpc::ServerAsyncResponseWriter< ::mini2::CancelResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_SubmitQuery<WithAsyncMethod_FetchChunk<WithAsyncMethod_ForwardQuery<WithAsyncMethod_CancelQuery<Service > > > > AsyncService;
+  typedef WithAsyncMethod_SubmitQuery<WithAsyncMethod_FetchChunk<WithAsyncMethod_ForwardQuery<WithAsyncMethod_FetchForwardChunk<WithAsyncMethod_CancelQuery<Service > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_SubmitQuery : public BaseClass {
    private:
@@ -329,18 +376,45 @@ class NodeService final {
       ::grpc::CallbackServerContext* /*context*/, const ::mini2::ForwardRequest* /*request*/, ::mini2::ForwardResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::mini2::ChunkRequest, ::mini2::ChunkResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mini2::ChunkRequest* request, ::mini2::ChunkResponse* response) { return this->FetchForwardChunk(context, request, response); }));}
+    void SetMessageAllocatorFor_FetchForwardChunk(
+        ::grpc::MessageAllocator< ::mini2::ChunkRequest, ::mini2::ChunkResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mini2::ChunkRequest, ::mini2::ChunkResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* FetchForwardChunk(
+      ::grpc::CallbackServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodCallback(3,
+      ::grpc::Service::MarkMethodCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::mini2::CancelRequest, ::mini2::CancelResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::mini2::CancelRequest* request, ::mini2::CancelResponse* response) { return this->CancelQuery(context, request, response); }));}
     void SetMessageAllocatorFor_CancelQuery(
         ::grpc::MessageAllocator< ::mini2::CancelRequest, ::mini2::CancelResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::mini2::CancelRequest, ::mini2::CancelResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -355,7 +429,7 @@ class NodeService final {
     virtual ::grpc::ServerUnaryReactor* CancelQuery(
       ::grpc::CallbackServerContext* /*context*/, const ::mini2::CancelRequest* /*request*/, ::mini2::CancelResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_SubmitQuery<WithCallbackMethod_FetchChunk<WithCallbackMethod_ForwardQuery<WithCallbackMethod_CancelQuery<Service > > > > CallbackService;
+  typedef WithCallbackMethod_SubmitQuery<WithCallbackMethod_FetchChunk<WithCallbackMethod_ForwardQuery<WithCallbackMethod_FetchForwardChunk<WithCallbackMethod_CancelQuery<Service > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_SubmitQuery : public BaseClass {
@@ -409,12 +483,29 @@ class NodeService final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodGeneric(3);
+    }
+    ~WithGenericMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(4);
     }
     ~WithGenericMethod_CancelQuery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -486,12 +577,32 @@ class NodeService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodRaw(3);
+    }
+    ~WithRawMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestFetchForwardChunk(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(4);
     }
     ~WithRawMethod_CancelQuery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -502,7 +613,7 @@ class NodeService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCancelQuery(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -572,12 +683,34 @@ class NodeService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodRawCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->FetchForwardChunk(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* FetchForwardChunk(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CancelQuery(context, request, response); }));
@@ -675,12 +808,39 @@ class NodeService final {
     virtual ::grpc::Status StreamedForwardQuery(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mini2::ForwardRequest,::mini2::ForwardResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_FetchForwardChunk : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_FetchForwardChunk() {
+      ::grpc::Service::MarkMethodStreamed(3,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mini2::ChunkRequest, ::mini2::ChunkResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mini2::ChunkRequest, ::mini2::ChunkResponse>* streamer) {
+                       return this->StreamedFetchForwardChunk(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_FetchForwardChunk() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status FetchForwardChunk(::grpc::ServerContext* /*context*/, const ::mini2::ChunkRequest* /*request*/, ::mini2::ChunkResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedFetchForwardChunk(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mini2::ChunkRequest,::mini2::ChunkResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_CancelQuery : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_CancelQuery() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::mini2::CancelRequest, ::mini2::CancelResponse>(
             [this](::grpc::ServerContext* context,
@@ -701,9 +861,9 @@ class NodeService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedCancelQuery(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mini2::CancelRequest,::mini2::CancelResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_SubmitQuery<WithStreamedUnaryMethod_FetchChunk<WithStreamedUnaryMethod_ForwardQuery<WithStreamedUnaryMethod_CancelQuery<Service > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_SubmitQuery<WithStreamedUnaryMethod_FetchChunk<WithStreamedUnaryMethod_ForwardQuery<WithStreamedUnaryMethod_FetchForwardChunk<WithStreamedUnaryMethod_CancelQuery<Service > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_SubmitQuery<WithStreamedUnaryMethod_FetchChunk<WithStreamedUnaryMethod_ForwardQuery<WithStreamedUnaryMethod_CancelQuery<Service > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_SubmitQuery<WithStreamedUnaryMethod_FetchChunk<WithStreamedUnaryMethod_ForwardQuery<WithStreamedUnaryMethod_FetchForwardChunk<WithStreamedUnaryMethod_CancelQuery<Service > > > > > StreamedService;
 };
 
 // MgmtService is a separate logical channel for status and heartbeat,

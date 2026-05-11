@@ -87,6 +87,9 @@ message ForwardResponse {
   double aggregation_avg = 5;
   int64 aggregation_count = 6;
   BftMetadata bft_meta = 7;
+  // Chunking: if is_last is false, caller fetches remaining chunks via FetchForwardChunk.
+  bool  is_last      = 8;
+  int32 total_chunks = 9;
 }
 
 message BftMetadata {
@@ -136,6 +139,8 @@ service NodeService {
   rpc SubmitQuery(QueryRequest) returns (ChunkResponse);
   rpc FetchChunk(ChunkRequest) returns (ChunkResponse);
   rpc ForwardQuery(ForwardRequest) returns (ForwardResponse);
+  // Pulls the next chunk of a chunked ForwardResponse (bypasses client fairness queue).
+  rpc FetchForwardChunk(ChunkRequest) returns (ChunkResponse);
   rpc CancelQuery(CancelRequest) returns (CancelResponse);
 }
 

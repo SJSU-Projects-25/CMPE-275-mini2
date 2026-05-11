@@ -49,6 +49,11 @@ class NodeServiceStub(object):
                 request_serializer=mini2__pb2.ForwardRequest.SerializeToString,
                 response_deserializer=mini2__pb2.ForwardResponse.FromString,
                 _registered_method=True)
+        self.FetchForwardChunk = channel.unary_unary(
+                '/mini2.NodeService/FetchForwardChunk',
+                request_serializer=mini2__pb2.ChunkRequest.SerializeToString,
+                response_deserializer=mini2__pb2.ChunkResponse.FromString,
+                _registered_method=True)
         self.CancelQuery = channel.unary_unary(
                 '/mini2.NodeService/CancelQuery',
                 request_serializer=mini2__pb2.CancelRequest.SerializeToString,
@@ -77,6 +82,13 @@ class NodeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def FetchForwardChunk(self, request, context):
+        """Pulls the next chunk of a chunked ForwardResponse (bypasses client fairness queue).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CancelQuery(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -100,6 +112,11 @@ def add_NodeServiceServicer_to_server(servicer, server):
                     servicer.ForwardQuery,
                     request_deserializer=mini2__pb2.ForwardRequest.FromString,
                     response_serializer=mini2__pb2.ForwardResponse.SerializeToString,
+            ),
+            'FetchForwardChunk': grpc.unary_unary_rpc_method_handler(
+                    servicer.FetchForwardChunk,
+                    request_deserializer=mini2__pb2.ChunkRequest.FromString,
+                    response_serializer=mini2__pb2.ChunkResponse.SerializeToString,
             ),
             'CancelQuery': grpc.unary_unary_rpc_method_handler(
                     servicer.CancelQuery,
@@ -188,6 +205,33 @@ class NodeService(object):
             '/mini2.NodeService/ForwardQuery',
             mini2__pb2.ForwardRequest.SerializeToString,
             mini2__pb2.ForwardResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FetchForwardChunk(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mini2.NodeService/FetchForwardChunk',
+            mini2__pb2.ChunkRequest.SerializeToString,
+            mini2__pb2.ChunkResponse.FromString,
             options,
             channel_credentials,
             insecure,

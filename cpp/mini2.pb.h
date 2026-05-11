@@ -3086,6 +3086,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
     kAggregationSumFieldNumber = 4,
     kAggregationAvgFieldNumber = 5,
     kAggregationCountFieldNumber = 6,
+    kIsLastFieldNumber = 8,
+    kTotalChunksFieldNumber = 9,
   };
   // repeated .mini2.TripRecordMsg records = 3;
   [[nodiscard]] int records_size()
@@ -3183,12 +3185,32 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
   void _internal_set_aggregation_count(::int64_t value);
 
   public:
+  // bool is_last = 8;
+  void clear_is_last() ;
+  [[nodiscard]] bool is_last() const;
+  void set_is_last(bool value);
+
+  private:
+  bool _internal_is_last() const;
+  void _internal_set_is_last(bool value);
+
+  public:
+  // int32 total_chunks = 9;
+  void clear_total_chunks() ;
+  [[nodiscard]] ::int32_t total_chunks() const;
+  void set_total_chunks(::int32_t value);
+
+  private:
+  ::int32_t _internal_total_chunks() const;
+  void _internal_set_total_chunks(::int32_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:mini2.ForwardResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 7,
-                                   2, 51,
+  static const ::google::protobuf::internal::TcParseTable<4, 9,
+                                   2, 59,
                                    2>
       _table_;
 
@@ -3218,6 +3240,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ForwardResponse final : public ::go
     double aggregation_sum_;
     double aggregation_avg_;
     ::int64_t aggregation_count_;
+    bool is_last_;
+    ::int32_t total_chunks_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -7071,6 +7095,56 @@ inline void ForwardResponse::set_allocated_bft_meta(::mini2::BftMetadata* PROTOB
 
   _impl_.bft_meta_ = reinterpret_cast<::mini2::BftMetadata*>(value);
   // @@protoc_insertion_point(field_set_allocated:mini2.ForwardResponse.bft_meta)
+}
+
+// bool is_last = 8;
+inline void ForwardResponse::clear_is_last() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_last_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000080U);
+}
+inline bool ForwardResponse::is_last() const {
+  // @@protoc_insertion_point(field_get:mini2.ForwardResponse.is_last)
+  return _internal_is_last();
+}
+inline void ForwardResponse::set_is_last(bool value) {
+  _internal_set_is_last(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  // @@protoc_insertion_point(field_set:mini2.ForwardResponse.is_last)
+}
+inline bool ForwardResponse::_internal_is_last() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_last_;
+}
+inline void ForwardResponse::_internal_set_is_last(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_last_ = value;
+}
+
+// int32 total_chunks = 9;
+inline void ForwardResponse::clear_total_chunks() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.total_chunks_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000100U);
+}
+inline ::int32_t ForwardResponse::total_chunks() const {
+  // @@protoc_insertion_point(field_get:mini2.ForwardResponse.total_chunks)
+  return _internal_total_chunks();
+}
+inline void ForwardResponse::set_total_chunks(::int32_t value) {
+  _internal_set_total_chunks(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
+  // @@protoc_insertion_point(field_set:mini2.ForwardResponse.total_chunks)
+}
+inline ::int32_t ForwardResponse::_internal_total_chunks() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.total_chunks_;
+}
+inline void ForwardResponse::_internal_set_total_chunks(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.total_chunks_ = value;
 }
 
 // -------------------------------------------------------------------

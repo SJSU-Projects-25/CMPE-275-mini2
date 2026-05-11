@@ -180,6 +180,8 @@ int main(int argc, char** argv) {
         grpc::ClientContext submit_ctx;
         submit_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
         const grpc::Status submit_status = stub->SubmitQuery(&submit_ctx, query, &first);
+        const double time_to_first_chunk_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t0).count();
         if (!submit_status.ok()) {
             std::cerr << "SubmitQuery failed: " << submit_status.error_message() << '\n';
             return 1;
@@ -249,6 +251,7 @@ int main(int argc, char** argv) {
         std::cout << "total_chunks: " << total_chunks << '\n';
         std::cout << "effective_chunk_size: " << first.effective_chunk_size() << '\n';
         std::cout << "total_records_received: " << total_records << '\n';
+        std::cout << "time_to_first_chunk_ms: " << time_to_first_chunk_ms << '\n';
         std::cout << "elapsed_ms: " << elapsed_ms << '\n';
         if (chunk_rtt_count > 0) {
             const double avg_rtt = sum_chunk_rtt_ms / static_cast<double>(chunk_rtt_count);
