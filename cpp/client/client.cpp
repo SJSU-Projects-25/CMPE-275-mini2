@@ -17,6 +17,7 @@
 namespace {
 
 constexpr int kGrpcMaxMessageBytes = 1800 * 1024 * 1024;
+constexpr int kChunkRetrySleepMs = 20;
 
 struct ClientOptions {
     std::filesystem::path config_path = "config/topology.json";
@@ -190,11 +191,27 @@ int main(int argc, char** argv) {
         const std::string& rid = first.request_id();
         std::int64_t total_records = static_cast<std::int64_t>(first.records_size());
         std::int32_t total_chunks = first.total_chunks();
+        const std::int64_t first_chunk_records = static_cast<std::int64_t>(first.records_size());
+        const bool first_chunk_is_last = first.is_last();
+        const std::int32_t first_chunk_total_chunks_hint = first.total_chunks();
 
         double min_chunk_rtt_ms = std::numeric_limits<double>::max();
         double max_chunk_rtt_ms = 0.0;
         double sum_chunk_rtt_ms = 0.0;
         int chunk_rtt_count = 0;
+        int fetch_attempt_count = 0;
+        int fetch_success_count = 0;
+        int fetch_unavailable_count = 0;
+        int consecutive_unavailable_streak = 0;
+        int max_consecutive_unavailable_streak = 0;
+        double fetch_rpc_time_total_ms = 0.0;
+        double retry_sleep_ms_total = 0.0;
+        int first_success_chunk_index = -1;
+        double first_success_chunk_ready_ms = -1.0;
+        double first_unavailable_ms = -1.0;
+        int total_chunks_hint_update_count = 0;
+        int first_nonzero_total_chunks_seen_at_chunk = -1;
+        double total_chunks_known_delay_ms = (first.total_chunks() > 0) ? 0.0 : -1.0;
 
         if (!first.is_last()) {
             std::int32_t idx = 1;
@@ -207,18 +224,36 @@ int main(int argc, char** argv) {
                 grpc::ClientContext fetch_ctx;
                 fetch_ctx.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(1800));
                 const auto chunk_t0 = std::chrono::steady_clock::now();
+                ++fetch_attempt_count;
                 const grpc::Status fetch_status = stub->FetchChunk(&fetch_ctx, chunk_req, &chunk);
                 const double chunk_rtt = std::chrono::duration<double, std::milli>(
                     std::chrono::steady_clock::now() - chunk_t0).count();
+                fetch_rpc_time_total_ms += chunk_rtt;
 
                 if (!fetch_status.ok()) {
                     if (fetch_status.error_code() == grpc::StatusCode::UNAVAILABLE) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        ++fetch_unavailable_count;
+                        ++consecutive_unavailable_streak;
+                        max_consecutive_unavailable_streak = std::max(
+                            max_consecutive_unavailable_streak, consecutive_unavailable_streak);
+                        if (first_unavailable_ms < 0.0) {
+                            first_unavailable_ms = std::chrono::duration<double, std::milli>(
+                                std::chrono::steady_clock::now() - t0).count();
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(kChunkRetrySleepMs));
+                        retry_sleep_ms_total += static_cast<double>(kChunkRetrySleepMs);
                         continue;
                     }
                     std::cerr << "FetchChunk failed at index " << idx << ": "
                               << fetch_status.error_message() << '\n';
                     return 1;
+                }
+                ++fetch_success_count;
+                consecutive_unavailable_streak = 0;
+                if (first_success_chunk_index < 0) {
+                    first_success_chunk_index = idx;
+                    first_success_chunk_ready_ms = std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - t0).count();
                 }
 
                 std::cout << "chunk_rtt_ms[" << idx << "]: " << chunk_rtt << '\n';
@@ -229,6 +264,12 @@ int main(int argc, char** argv) {
 
                 total_records += static_cast<std::int64_t>(chunk.records_size());
                 if (chunk.total_chunks() > 0) {
+                    ++total_chunks_hint_update_count;
+                    if (first_nonzero_total_chunks_seen_at_chunk < 0 && first.total_chunks() <= 0) {
+                        first_nonzero_total_chunks_seen_at_chunk = idx;
+                        total_chunks_known_delay_ms = std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - t0).count() - time_to_first_chunk_ms;
+                    }
                     total_chunks = chunk.total_chunks();
                 }
                 if (chunk.is_last()) {
@@ -244,15 +285,34 @@ int main(int argc, char** argv) {
         const auto t1 = std::chrono::steady_clock::now();
         const double elapsed_ms =
             std::chrono::duration<double, std::milli>(t1 - t0).count();
+        const double post_first_chunk_ms = elapsed_ms - time_to_first_chunk_ms;
 
         std::cout << "request_id: " << rid << '\n';
         std::cout << "entry: " << endpoint << '\n';
         std::cout << "query_type: " << opt.query_type << '\n';
+        std::cout << "first_chunk_records: " << first_chunk_records << '\n';
+        std::cout << "first_chunk_is_last: " << (first_chunk_is_last ? "true" : "false") << '\n';
+        std::cout << "first_chunk_total_chunks_hint: " << first_chunk_total_chunks_hint << '\n';
         std::cout << "total_chunks: " << total_chunks << '\n';
         std::cout << "effective_chunk_size: " << first.effective_chunk_size() << '\n';
         std::cout << "total_records_received: " << total_records << '\n';
         std::cout << "time_to_first_chunk_ms: " << time_to_first_chunk_ms << '\n';
         std::cout << "elapsed_ms: " << elapsed_ms << '\n';
+        std::cout << "post_first_chunk_ms: " << post_first_chunk_ms << '\n';
+        std::cout << "retry_interval_ms: " << kChunkRetrySleepMs << '\n';
+        std::cout << "fetch_attempt_count: " << fetch_attempt_count << '\n';
+        std::cout << "fetch_success_count: " << fetch_success_count << '\n';
+        std::cout << "fetch_unavailable_count: " << fetch_unavailable_count << '\n';
+        std::cout << "max_consecutive_unavailable: " << max_consecutive_unavailable_streak << '\n';
+        std::cout << "retry_sleep_ms_total: " << retry_sleep_ms_total << '\n';
+        std::cout << "fetch_rpc_time_total_ms: " << fetch_rpc_time_total_ms << '\n';
+        std::cout << "first_unavailable_ms: " << first_unavailable_ms << '\n';
+        std::cout << "first_success_chunk_index: " << first_success_chunk_index << '\n';
+        std::cout << "first_success_chunk_ready_ms: " << first_success_chunk_ready_ms << '\n';
+        std::cout << "total_chunks_hint_update_count: " << total_chunks_hint_update_count << '\n';
+        std::cout << "first_nonzero_total_chunks_seen_at_chunk: "
+                  << first_nonzero_total_chunks_seen_at_chunk << '\n';
+        std::cout << "total_chunks_known_delay_ms: " << total_chunks_known_delay_ms << '\n';
         if (chunk_rtt_count > 0) {
             const double avg_rtt = sum_chunk_rtt_ms / static_cast<double>(chunk_rtt_count);
             std::cout << "chunk_rtt_min_ms: " << min_chunk_rtt_ms << '\n';

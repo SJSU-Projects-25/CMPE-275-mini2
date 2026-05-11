@@ -566,6 +566,7 @@ public:
         const auto replica_targets = expand_replica_targets();
         std::vector<std::future<ChildCallResult>> futures;
         futures.reserve(replica_targets.size());
+        const int forward_timeout_seconds = std::max(1, chunk_timeout_seconds_);
 
         const auto scatter_t0 = std::chrono::steady_clock::now();
         for (const auto& target : replica_targets) {
@@ -582,14 +583,15 @@ public:
             mini2::NodeService::Stub* stub = stub_it->second.get();
             futures.push_back(std::async(
                 std::launch::async,
-                [target, forward_request, stub]() mutable {
+                [target, forward_request, stub, forward_timeout_seconds]() mutable {
                 ChildCallResult result;
                 result.logical_child_id = target.logical_child_id;
                 result.replica_id = target.replica_id;
                 {
                     ::grpc::ClientContext client_ctx;
                     client_ctx.set_deadline(
-                        std::chrono::system_clock::now() + std::chrono::seconds(1800));
+                        std::chrono::system_clock::now() +
+                        std::chrono::seconds(forward_timeout_seconds));
                     result.status = stub->ForwardQuery(&client_ctx, forward_request, &result.response);
                 }
                 if (!result.status.ok() || result.response.is_last()) {
@@ -605,7 +607,8 @@ public:
                     mini2::ChunkResponse chunk_resp;
                     ::grpc::ClientContext fetch_ctx;
                     fetch_ctx.set_deadline(
-                        std::chrono::system_clock::now() + std::chrono::seconds(1800));
+                        std::chrono::system_clock::now() +
+                        std::chrono::seconds(forward_timeout_seconds));
                     const auto fetch_st = stub->FetchForwardChunk(&fetch_ctx, chunk_req, &chunk_resp);
                     if (!fetch_st.ok()) {
                         result.status = fetch_st;

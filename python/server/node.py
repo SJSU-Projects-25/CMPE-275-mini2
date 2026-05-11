@@ -58,6 +58,7 @@ class NodeContext:
     records: list[TripRecord]
     submit_local_only: bool
     chunk_size: int
+    chunk_timeout_seconds: int
     bft_mode: str
     bft_auth_type: str
     bft_key: str
@@ -223,6 +224,12 @@ def load_node_context(
     chunk_size = int(raw_chunk) if isinstance(raw_chunk, (int, float)) else 500
     if chunk_size < 1:
         chunk_size = 500
+    raw_timeout = config.get("chunk_timeout_seconds", 1800)
+    chunk_timeout_seconds = (
+        int(raw_timeout) if isinstance(raw_timeout, (int, float)) else 1800
+    )
+    if chunk_timeout_seconds < 1:
+        chunk_timeout_seconds = 1800
 
     bft_mode = str(config.get("bft_mode", "off"))
     bft_cfg = config.get("bft", {}) if isinstance(config.get("bft", {}), dict) else {}
@@ -245,6 +252,7 @@ def load_node_context(
         records=records,
         submit_local_only=submit_local_only,
         chunk_size=chunk_size,
+        chunk_timeout_seconds=chunk_timeout_seconds,
         bft_mode=bft_mode,
         bft_auth_type=bft_auth_type,
         bft_key=bft_key,
@@ -302,7 +310,8 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                 query=request.query,
                 bft_meta=request.bft_meta,
             )
-            fwd_resp = stub.ForwardQuery(child_request, timeout=1800.0)
+            timeout_s = float(self.context.chunk_timeout_seconds)
+            fwd_resp = stub.ForwardQuery(child_request, timeout=timeout_s)
             if fwd_resp.is_last:
                 return fwd_resp
             # Chunked response: pull remaining chunks via FetchForwardChunk.
@@ -311,7 +320,7 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
                 chunk_req = mini2_pb2.ChunkRequest(
                     request_id=fwd_resp.request_id, chunk_index=chunk_idx
                 )
-                chunk_resp = stub.FetchForwardChunk(chunk_req, timeout=1800.0)
+                chunk_resp = stub.FetchForwardChunk(chunk_req, timeout=timeout_s)
                 all_records.extend(chunk_resp.records)
                 if chunk_resp.is_last:
                     break
@@ -701,6 +710,7 @@ def main() -> int:
     print(f"  port: {context.port}", flush=True)
     print(f"  children: {children_text}", flush=True)
     print(f"  submit_local_only: {context.submit_local_only}", flush=True)
+    print(f"  chunk_timeout_seconds: {context.chunk_timeout_seconds}", flush=True)
     print(f"  bft_mode: {context.bft_mode}", flush=True)
     print(f"  fault_injection_enabled: {context.fault_injection_enabled}", flush=True)
     print(f"  data_file: {context.data_path.as_posix()}", flush=True)
