@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
+import signal
 import sys
 import time
 import uuid
@@ -28,6 +30,18 @@ from query_engine import QueryEngine
 from trip_record import TripRecord
 
 GRPC_MAX_MESSAGE_BYTES = 1800 * 1024 * 1024
+
+
+def _grpc_channel_options() -> tuple[tuple[str, int], ...]:
+    """Options for long-lived client channels (see grpc.io/docs/guides/performance)."""
+    return (
+        ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_BYTES),
+        ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_BYTES),
+        # HTTP/2 keepalive PINGs — cheap insurance on idle WAN links / NAT middleboxes.
+        ("grpc.keepalive_time_ms", 120_000),
+        ("grpc.keepalive_timeout_ms", 20_000),
+        ("grpc.keepalive_permit_without_calls", 1),
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -283,6 +297,11 @@ def _trip_record_to_proto(record: TripRecord) -> mini2_pb2.TripRecordMsg:
     )
 
 
+def _ephemeral_grpc_channels() -> bool:
+    """Set MINI2_GRPC_EPHEMERAL_CHANNELS=1 to restore per-forward channel behavior (A/B benchmarks)."""
+    return os.environ.get("MINI2_GRPC_EPHEMERAL_CHANNELS", "").strip().lower() in ("1", "true", "yes")
+
+
 class NodeService(mini2_pb2_grpc.NodeServiceServicer):
     def __init__(self, context: NodeContext) -> None:
         self.context = context
@@ -291,50 +310,86 @@ class NodeService(mini2_pb2_grpc.NodeServiceServicer):
         # Entries are removed when the last chunk is served.
         self._fwd_cache: dict[str, list[mini2_pb2.TripRecordMsg]] = {}
         self._fwd_lock = threading.Lock()
+        self._ephemeral_outbound = _ephemeral_grpc_channels()
+        # One gRPC channel + stub per child — reuse TCP + HTTP/2 connection across RPCs
+        # (grpc.io/docs/guides/performance). Ephemeral mode opens a new channel per ForwardQuery.
+        self._child_channels: dict[str, grpc.Channel] = {}
+        self._child_stubs: dict[str, mini2_pb2_grpc.NodeServiceStub] = {}
+        if not self._ephemeral_outbound:
+            chan_opts = _grpc_channel_options()
+            for child_id in context.children:
+                target = context.node_addresses.get(child_id)
+                if not target:
+                    continue
+                channel = grpc.insecure_channel(target, options=chan_opts)
+                self._child_channels[child_id] = channel
+                self._child_stubs[child_id] = mini2_pb2_grpc.NodeServiceStub(channel)
+        else:
+            print(
+                f"[{context.node_id}] gRPC outbound: EPHEMERAL (MINI2_GRPC_EPHEMERAL_CHANNELS) — "
+                "new channel per ForwardQuery",
+                flush=True,
+            )
+
+    def close_child_connections(self) -> None:
+        """Release outbound TCP connections (called on server shutdown)."""
+        for _cid, channel in list(self._child_channels.items()):
+            channel.close()
+        self._child_channels.clear()
+        self._child_stubs.clear()
 
     def _forward_to_child(
         self, child_id: str, request: mini2_pb2.ForwardRequest
     ) -> mini2_pb2.ForwardResponse:
-        target = self.context.node_addresses[child_id]
-        with grpc.insecure_channel(
-            target,
-            options=(
-                ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_BYTES),
-                ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_BYTES),
-            ),
-        ) as channel:
-            stub = mini2_pb2_grpc.NodeServiceStub(channel)
-            child_request = mini2_pb2.ForwardRequest(
-                request_id=request.request_id,
-                origin_node=self.context.node_id,
-                query=request.query,
-                bft_meta=request.bft_meta,
+        child_request = mini2_pb2.ForwardRequest(
+            request_id=request.request_id,
+            origin_node=self.context.node_id,
+            query=request.query,
+            bft_meta=request.bft_meta,
+        )
+
+        if self._ephemeral_outbound:
+            target = self.context.node_addresses[child_id]
+            with grpc.insecure_channel(target, options=_grpc_channel_options()) as channel:
+                stub = mini2_pb2_grpc.NodeServiceStub(channel)
+                return self._call_child_stub(stub, child_request)
+
+        stub = self._child_stubs.get(child_id)
+        if stub is None:
+            raise RuntimeError(
+                f"No gRPC stub for child '{child_id}' (check topology children vs node_addresses)"
             )
-            timeout_s = float(self.context.chunk_timeout_seconds)
-            fwd_resp = stub.ForwardQuery(child_request, timeout=timeout_s)
-            if fwd_resp.is_last:
-                return fwd_resp
-            # Chunked response: pull remaining chunks via FetchForwardChunk.
-            all_records = list(fwd_resp.records)
-            for chunk_idx in range(1, fwd_resp.total_chunks):
-                chunk_req = mini2_pb2.ChunkRequest(
-                    request_id=fwd_resp.request_id, chunk_index=chunk_idx
-                )
-                chunk_resp = stub.FetchForwardChunk(chunk_req, timeout=timeout_s)
-                all_records.extend(chunk_resp.records)
-                if chunk_resp.is_last:
-                    break
-            return mini2_pb2.ForwardResponse(
-                request_id=fwd_resp.request_id,
-                source_node=fwd_resp.source_node,
-                records=all_records,
-                aggregation_sum=fwd_resp.aggregation_sum,
-                aggregation_avg=fwd_resp.aggregation_avg,
-                aggregation_count=fwd_resp.aggregation_count,
-                bft_meta=fwd_resp.bft_meta,
-                is_last=True,
-                total_chunks=1,
+        return self._call_child_stub(stub, child_request)
+
+    def _call_child_stub(
+        self,
+        stub: mini2_pb2_grpc.NodeServiceStub,
+        child_request: mini2_pb2.ForwardRequest,
+    ) -> mini2_pb2.ForwardResponse:
+        timeout_s = float(self.context.chunk_timeout_seconds)
+        fwd_resp = stub.ForwardQuery(child_request, timeout=timeout_s)
+        if fwd_resp.is_last:
+            return fwd_resp
+        all_records = list(fwd_resp.records)
+        for chunk_idx in range(1, fwd_resp.total_chunks):
+            chunk_req = mini2_pb2.ChunkRequest(
+                request_id=fwd_resp.request_id, chunk_index=chunk_idx
             )
+            chunk_resp = stub.FetchForwardChunk(chunk_req, timeout=timeout_s)
+            all_records.extend(chunk_resp.records)
+            if chunk_resp.is_last:
+                break
+        return mini2_pb2.ForwardResponse(
+            request_id=fwd_resp.request_id,
+            source_node=fwd_resp.source_node,
+            records=all_records,
+            aggregation_sum=fwd_resp.aggregation_sum,
+            aggregation_avg=fwd_resp.aggregation_avg,
+            aggregation_count=fwd_resp.aggregation_count,
+            bft_meta=fwd_resp.bft_meta,
+            is_last=True,
+            total_chunks=1,
+        )
 
     @staticmethod
     def _build_payload_hash(response: mini2_pb2.ForwardResponse) -> str:
@@ -672,6 +727,7 @@ class MgmtService(mini2_pb2_grpc.MgmtServiceServicer):
 
 def serve(context: NodeContext) -> None:
     start_time = time.time()
+    node_service = NodeService(context)
     server = grpc.server(
         ThreadPoolExecutor(max_workers=16),
         options=(
@@ -680,7 +736,7 @@ def serve(context: NodeContext) -> None:
             ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_BYTES),
         ),
     )
-    mini2_pb2_grpc.add_NodeServiceServicer_to_server(NodeService(context), server)
+    mini2_pb2_grpc.add_NodeServiceServicer_to_server(node_service, server)
     mini2_pb2_grpc.add_MgmtServiceServicer_to_server(
         MgmtService(context, start_time), server
     )
@@ -690,7 +746,15 @@ def serve(context: NodeContext) -> None:
         raise RuntimeError(f"Failed to bind gRPC server to {bind_target}")
     server.start()
     print(f"Node {context.node_id} gRPC server listening on {bind_target}", flush=True)
+
+    def _shutdown(*_args: object) -> None:
+        node_service.close_child_connections()
+        server.stop(grace=5)
+
+    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGTERM, _shutdown)
     server.wait_for_termination()
+    node_service.close_child_connections()
 
 
 def main() -> int:
